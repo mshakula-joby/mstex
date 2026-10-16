@@ -10,6 +10,10 @@
 % Options:
 %   palette=<name>   color pair from section 8.3 of the brand guide's color page:
 %                    blue (default; also default or light), orange, green, navy, osaka.
+%   proprietary      marks the deck as proprietary: adds a notice to the footer and a notice slide
+%                    after the title page.
+%
+% The institute defaults to \institute{Joby Aviation}; set your own \institute to override it.
 %
 % This directory must be on TEXINPUTS (the project's .latexmkrc does this). Fonts are loaded from
 % fonts/ and the logo source is kept as jobymark.svg here. Needs LuaLaTeX or XeLaTeX.
@@ -25,9 +29,12 @@
 \ExplSyntaxOn
 \tl_new:N \g_joby_palette_tl
 \tl_gset:Nn \g_joby_palette_tl { blue }
+\bool_new:N \g_joby_proprietary_bool
 \keys_define:nn { joby }
   {
     palette .tl_gset:N = \g_joby_palette_tl ,
+    proprietary .bool_gset:N = \g_joby_proprietary_bool ,
+    proprietary .default:n = { true } ,
   }
 \ExplSyntaxOff
 \ProcessKeyOptions[joby]
@@ -65,6 +72,9 @@
 \newcommand{\jobywithpackage}[2]{%
 	\@ifpackageloaded{#1}{#2}{\AddToHook{package/#1/after}{#2}}%
 }
+
+\setbeamertemplate{frame footer}[joby]
+\institute{Joby Aviation}
 
 \jobywithpackage{hyperref}{%
 	% Internal links (outline, section titles, footer) keep their normal color.

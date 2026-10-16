@@ -59,4 +59,51 @@
 	\end{tikzpicture}%
 }
 
+% Footer: copyright, institute and date (MM/DD/YYYY) at the bottom left, the short title centered on the
+% page, and (with the proprietary option) the proprietary notice at the bottom right, before the slide
+% number that Gotham's footline adds.
+\newcommand{\jobyfooterdate}{\two@digits{\month}/\two@digits{\day}/\the\year}
+\newcommand{\jobyproprietaryfooter}{}
+\ExplSyntaxOn
+\bool_if:NT \g_joby_proprietary_bool
+  { \renewcommand{\jobyproprietaryfooter}{PROPRIETARY~INFORMATION.~DO~NOT~DISTRIBUTE.} }
+\ExplSyntaxOff
+
+\defbeamertemplate{frame footer}{joby}{
+	\hspace{\gothamLeftFooterPadding}%
+	% Zero-width boxes, so the title is centered on the page whatever the left and right texts are.
+	\hbox to 0pt{\kern\dimexpr\textwidth/2-3ex-\gothamLeftFooterPadding\relax
+		\hbox to 0pt{\hss\insertshorttitle\gotham@strut\hss}\hss}%
+	{\scriptsize\textcopyright~\uppercase\expandafter{\insertinstitute}~\jobyfooterdate}%
+	\hfill
+	{\tiny\jobyproprietaryfooter}%
+	\vspace*{\gothamFooterHOffset}
+}
+
+% The institute is shown in the footer, so keep it off the title page.
+\defbeamertemplate{institute}{joby}{}
+\setbeamertemplate{institute}[joby]
+
+% The proprietary notice slide, shown right after the title page. It has no title, so no header banner.
+% It names the institute (\institute, default Joby Aviation).
+\newcommand{\jobyproprietaryslide}{%
+	\begin{frame}[jobyfront, c]
+		\centering
+		\large
+		All information contained in these slides is \insertinstitute\ Proprietary.\par
+		\vspace{\baselineskip}
+		Do not distribute without prior authorization from \insertinstitute.\par
+	\end{frame}%
+}
+\ExplSyntaxOn
+\AtBeginDocument
+  {
+    \bool_if:NT \g_joby_proprietary_bool
+      {
+        \apptocmd { \maketitle } { \jobyproprietaryslide } { }
+          { \PackageWarning { beamerouterthemejoby } { Could~not~patch~\string\maketitle;~no~proprietary~slide } }
+      }
+  }
+\ExplSyntaxOff
+
 \endinput

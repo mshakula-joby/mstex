@@ -27,15 +27,22 @@
 	\apptocmd{\beamer@subsection}{\jobytocrecord{sub:\thesection.\thesubsection}}{}{}%
 }
 
-% The outline slides are not counted among the numbered slides: their footer shows a lowercase
-% roman numeral (i, ii, ...) instead. Gotham's [toc] frame option runs tocenv.
-\newcounter{jobytocframe}
+% Front matter slides (the proprietary notice and the outline) are not counted among the numbered
+% slides: their footer shows a lowercase roman numeral (i, ii, ...) instead. They are marked with the
+% frame option [jobyfront]; Gotham's [toc] option also runs it through tocenv.
+\newcounter{jobyfrontframe}
+\newenvironment{jobyfrontenv}{%
+	\beamer@noframenumberingtrue
+	\stepcounter{jobyfrontframe}%
+	\def\insertframenumber{\romannumeral\value{jobyfrontframe}}%
+}{}
+\ExplSyntaxOn
+\__gotham_add_beamerframe_key:n { jobyfront }
+\ExplSyntaxOff
 \renewenvironment{tocenv}{%
 	\usebeamertemplate{toc page}%
-	\beamer@noframenumberingtrue
-	\stepcounter{jobytocframe}%
-	\def\insertframenumber{\romannumeral\value{jobytocframe}}%
-}{}
+	\begin{jobyfrontenv}%
+}{\end{jobyfrontenv}}
 
 % Entries are set in an \hbox to the full line width, with the number flush right. (\hbox to rather than
 % \makebox, whose own \hss would share the stretch with the \hfill that right-aligns the number.)
