@@ -1,0 +1,16 @@
+% draft-tools with the draft option: drafting commands are visible.
+\documentclass{article}
+\usepackage[draft]{draft-tools}
+\begin{document}
+Before. \draft{a drafting note} After.
+
+\draft{}
+
+\idea{an idea} and \directions{some directions}.
+
+\begin{discardcontent}
+DISCARDED-TEXT
+\end{discardcontent}
+
+Trimmed: [\trimspaces{   spaced out   }]
+\end{document}

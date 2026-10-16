@@ -1,0 +1,62 @@
+% beamerouterthemejoby.sty
+%
+% Joby logo mark and its placement: white in the frame title bars, Joby Blue on the title page.
+% Requires the Gotham theme.
+
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{beamerouterthemejoby}[2026/10/16 Joby logo mark for Beamer]
+
+\RequirePackage{tikz}
+
+% Joby logo mark: \jobymark[<height>]{<color>}.
+% Path converted from "Joby Logo Mark - Joby Blue.svg" (viewBox 357.35 x 224.47, kept next to this file as jobymark.svg) to TikZ coordinates,
+% so it can be recolored to follow the palette.
+\newcommand{\jobymarkpath}{%
+	(120.70,122.14)%
+	.. controls (93.14,200.31) and (60.05,216.44) .. (42.44,221.44)%
+	.. controls (-24.15,240.35) and (-18.68,123.67) .. (104.23,98.57)%
+	.. controls (165.29,-73.20) and (279.86,6.64) .. (341.67,132.39)%
+	.. controls (376.94,204.13) and (348.81,243.25) .. (296.22,215.50)%
+	.. controls (251.37,191.82) and (191.64,120.12) .. (120.70,122.14)%
+	-- (120.70,122.14)%
+	-- cycle%
+	(46.48,155.41)%
+	.. controls (18.25,189.82) and (59.25,231.38) .. (98.61,123.22)%
+	.. controls (87.01,126.34) and (66.10,131.48) .. (46.48,155.41)%
+	-- (46.48,155.41)%
+	-- cycle%
+	(128.34,97.78)%
+	.. controls (212.52,101.02) and (278.96,191.26) .. (307.38,185.09)%
+	.. controls (351.03,175.61) and (192.67,-94.66) .. (128.34,97.78)%
+	-- (128.34,97.78)%
+	-- cycle%
+}
+\NewDocumentCommand{\jobymark}{O{2.4ex} m}{%
+	\resizebox{!}{#1}{%
+		\begin{tikzpicture}
+			\useasboundingbox (0,0) rectangle (357.35,224.47);
+			\fill[#2] \jobymarkpath;
+		\end{tikzpicture}%
+	}%
+}
+
+% White mark at the right end of every frame title bar (Gotham's logo slot).
+\renewcommand{\gothamInstituteLogoSquare}[1][3.2ex]{\raisebox{0.2ex}{\jobymark[#1]{JobyWhite}}}
+
+% Mark on the title page (Gotham's title page logo slot).
+% The 1.5pt xshift is an optical correction (the mark's long tail sits to the right of its loop).
+% Anchored to the page rather than to Gotham's fixed picture offset, so it stays centered on any paper size.
+% The revision string (\jobytitlerevision, set by beamerthemejoby when revision-number is loaded)
+% goes in the bottom right corner, small and low-visibility.
+\newcommand{\jobytitlerevision}{}
+\renewcommand{\gothamtitlepagelogo}{%
+	\begin{tikzpicture}[remember picture, overlay]
+		\node at ([xshift=1.5pt, yshift=6ex]current page.south) {\jobymark[6ex]{JobyBlue}};
+		\ifx\jobytitlerevision\@empty\else
+			\node[anchor=south east, text=JobyDarkGray, font=\tiny]
+				at ([xshift=-1.5ex, yshift=1.2ex]current page.south east) {\jobytitlerevision};
+		\fi
+	\end{tikzpicture}%
+}
+
+\endinput

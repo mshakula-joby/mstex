@@ -1,0 +1,66 @@
+% Shared slides for the beamerthemejoby palette tests.
+\title{Joby Theme Test}
+\subtitle{Palette \texttt{\jobytestpalette}}
+\author{Test Author}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\begin{frame}{Outline}
+	\tableofcontents
+\end{frame}
+
+\section{Text}
+
+\begin{frame}{Text and emphasis}
+	Plain text, \textbf{bold text} and \alert{emphasized text}.
+	A link: \href{https://example.com}{example.com}, and a URL: \url{https://example.com/path}.
+	\begin{itemize}
+		\item First item
+		\item Second item with \texttt{monospace}
+		\begin{itemize}
+			\item Nested item
+		\end{itemize}
+	\end{itemize}
+	\begin{block}{A block}
+		Block body text.
+	\end{block}
+	\begin{alertblock}{An alert block}
+		Alert body text.
+	\end{alertblock}
+	\begin{exampleblock}{An example block}
+		Example body text.
+	\end{exampleblock}
+\end{frame}
+
+\subsection{Tables and figures}
+
+\begin{frame}{A table and a diagram}
+	\begin{tabular}{lrr}
+		\hline
+		Channel & Depth & Priority \\
+		\hline
+		Alpha & 64 & high \\
+		Beta & 42 & low \\
+		\hline
+	\end{tabular}
+	\hfill
+	\begin{tikzpicture}
+		\node[draw=colorAccent, thick, rounded corners, minimum width=2cm, minimum height=1cm] (a) {Core 0};
+		\node[draw=colorAccent, thick, rounded corners, minimum width=2cm, minimum height=1cm, right=1.2cm of a] (b) {Core 1};
+		\draw[->] (a) -- (b);
+	\end{tikzpicture}
+\end{frame}
+
+\section{Long title that should still fit on its section page without trouble}
+
+\begin{frame}{A frame with a rather long title that tests how the title bar wraps around the logo}
+	Content.
+\end{frame}
+
+\begin{frame}[standout]{Questions?}
+\end{frame}
+
+\end{document}

@@ -1,0 +1,88 @@
+% beamerthemejoby.sty
+%
+% Beamer theme for Joby presentations: the Gotham theme recolored with the Joby brand palette
+% (https://brand.jobyaviation.com/graphic-elements), Joby Sans fonts and the Joby logo mark.
+%
+% Usage:
+%   \documentclass[aspectratio=169,10pt]{beamer}
+%   \usetheme[palette=osaka]{joby}
+%
+% Options:
+%   palette=<name>   color pair from section 8.3 of the brand guide's color page:
+%                    blue (default; also default or light), orange, green, navy, osaka.
+%
+% This directory must be on TEXINPUTS (the project's .latexmkrc does this). Fonts are loaded from
+% fonts/ and the logo source is kept as jobymark.svg here. Needs LuaLaTeX or XeLaTeX.
+%
+% Package integration (applied only if the package is loaded, whether before or after the theme):
+%   hyperref  - \href and \url links use the palette's emphasis (alert) color.
+%   revision-number - the revision (\makerevision) is printed small in the title page's bottom right corner.
+%   listings  - code blocks use the palette's accent color as their background.
+
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{beamerthemejoby}[2026/10/16 Joby Gotham-based Beamer theme]
+
+\ExplSyntaxOn
+\tl_new:N \g_joby_palette_tl
+\tl_gset:Nn \g_joby_palette_tl { blue }
+\keys_define:nn { joby }
+  {
+    palette .tl_gset:N = \g_joby_palette_tl ,
+  }
+\ExplSyntaxOff
+\ProcessKeyOptions[joby]
+
+% Load the base theme first.
+% See https://ctan.org/tex-archive/macros/latex/contrib/beamer-contrib/themes/beamertheme-gotham?lang=en
+\usetheme{gotham}
+
+% Loaded with \RequirePackage: \usecolortheme/\useoutertheme here make LuaTeX fail at PDF output with a
+% font-embedding error ("cannot find file ''") once Joby Sans is loaded.
+\RequirePackage{beamercolorthemejoby}
+\RequirePackage{beamerfontthemejoby}
+\RequirePackage{beamerouterthemejoby}
+
+% Joby Sans has deeper descenders than Fira, which Gotham's tiny footline depth clips at the page edge.
+\setlength{\gothamFootlineDepth}{1.2ex}
+
+\gothamset{
+	background=light,
+	numbering=framenumber,
+	parttocframe default=off,
+	sectiontocframe default=off,
+	subsectiontocframe default=off,
+}
+
+% Run <code> now if <package> is already loaded, or right after it is loaded later.
+\newcommand{\jobywithpackage}[2]{%
+	\@ifpackageloaded{#1}{#2}{\AddToHook{package/#1/after}{#2}}%
+}
+
+\jobywithpackage{hyperref}{%
+	% Internal links (outline, section titles, footer) keep their normal color.
+	\hypersetup{colorlinks=true, urlcolor=colorD, linkcolor={}, citecolor={}, filecolor=colorD}%
+}
+
+\jobywithpackage{revision-number}{%
+	\renewcommand{\jobytitlerevision}{\makerevision}%
+}
+
+\jobywithpackage{listings}{%
+	\lstset{
+		basicstyle=\ttfamily\footnotesize\color{colorDark},
+		backgroundcolor=\color{colorAccent},
+		frame=none,
+		framexleftmargin=1ex,
+		framexrightmargin=1ex,
+		framextopmargin=1ex,
+		framexbottommargin=1ex,
+		xleftmargin=1ex,
+		xrightmargin=1ex,
+		breaklines=true,
+		showstringspaces=false,
+		columns=fullflexible,
+		keepspaces=true,
+	}%
+}
+
+\endinput

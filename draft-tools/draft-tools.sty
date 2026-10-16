@@ -1,0 +1,67 @@
+% draft-tools.sty
+% 
+% Package to define custom commands for drafting a project.
+
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{draft-tools}[Drafting Tools for LaTeX]
+
+\RequirePackage[dvipsnames]{xcolor}
+\RequirePackage{lipsum}
+
+\newif\ifdraft
+
+\DeclareOption{draft}{\drafttrue}
+
+\ProcessOptions
+
+% Discardcontent Macro
+\makeatletter
+\newenvironment{discardcontent}
+{\long\def\discard@body##1{}}
+{}
+\makeatother
+
+% Trim spaces macro to trim spaces from the beginning and end of a string.
+\ExplSyntaxOn
+\NewDocumentCommand{\trimspaces}{m}
+{
+  \tl_trim_spaces:n{#1}
+}
+\ExplSyntaxOff
+
+
+% Drafting commands.
+\ifdraft
+  \newcommand{\draft}[1]{%
+    \if\relax\detokenize{#1}\relax%
+      {\color{WildStrawberry}[\dots]}%
+    \else%
+      {\color{WildStrawberry}[\trimspaces{#1}]}%
+    \fi%
+  }
+  \newcommand{\idea}[1]{%
+    \if\relax\detokenize{#1}\relax%
+      {\color{Turquoise}\(\langle\)\dots\(\rangle\)}%
+    \else%
+      {\color{Turquoise}\(\langle\)\trimspaces{#1}\(\rangle\)}%
+    \fi%
+  }
+  \newcommand{\directions}[1]{%
+    \if\relax\detokenize{#1}\relax%
+      {\color{Bittersweet}}%
+    \else%
+      {\color{Bittersweet}\trimspaces{#1}}%
+    \fi%
+  }
+\else
+  \newcommand{\draft}[1]{%
+    \if\relax\detokenize{#1}\relax%
+    \else%
+      \trimspaces{#1}%
+    \fi%
+  }
+  \newcommand{\idea}[1]{}
+  \newcommand{\directions}[1]{}
+\fi
+
+\endinput

@@ -1,0 +1,139 @@
+% revision-number.sty
+%
+% Support for creating a revision number.
+
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{revision-number}[Support creating revision number for LaTeX documents]
+
+\RequirePackage{expl3}
+\RequirePackage[en-US]{datetime2}
+\RequirePackage{gitinfo2}
+
+% ==============================================================================
+%                            PUBLIC COMMANDS
+% ==============================================================================
+
+% Display date in ISO style (with time).
+\NewDocumentCommand{\isodate}{ m }{%
+  \begingroup
+  \DTMsetstyle{iso}%
+  \renewcommand*{\DTMdisplay}[9]{\DTMdisplaydate{##1}{##2}{##3}{##4} \DTMdisplaytime{##5}{##6}{##7}}%
+  \renewcommand*{\DTMDisplay}[9]{\DTMDisplaydate{##1}{##2}{##3}{##4} \DTMDisplaytime{##5}{##6}{##7}}%
+  #1%
+  \endgroup
+}
+
+% Display date in US style (without time).
+\NewDocumentCommand{\usdate}{ m }{%
+  \begingroup
+  \DTMsetstyle{en-US}%
+  \renewcommand*{\DTMdisplay}[9]{\DTMdisplaydate{##1}{##2}{##3}{##4}}%
+  \renewcommand*{\DTMDisplay}[9]{\DTMDisplaydate{##1}{##2}{##3}{##4}}%
+  #1%
+  \endgroup
+}
+
+\ExplSyntaxOn
+
+% Git commit date if the tree is clean, otherwise the current date/time.
+\NewDocumentCommand{\gitdateornow}{}
+{
+  \__revision_gitdate_or:n { \DTMnow }
+}
+
+% ISO date followed by the git tag or abbreviated hash.
+\NewDocumentCommand{\makerevision}{}
+{
+  \isodate{\gitdateornow} ~ (git:\__revision_tag_or_hash:)
+}
+
+\ExplSyntaxOff
+
+% ==============================================================================
+%                             IMPLEMENTATION
+% ==============================================================================
+
+\ExplSyntaxOn
+
+% --- Shared predicate: macro exists and has a usable value -------------------
+
+\prg_new_conditional:Nnn \__revision_if_usable:N { T, F, TF }
+{
+  \cs_if_exist:NTF #1
+  {
+    \str_if_eq:eeTF { #1 } { (None) }
+    { \prg_return_false: }
+    {
+      \str_if_eq:eeTF { #1 } { }
+      { \prg_return_false: }
+      { \prg_return_true: }
+    }
+  }
+  { \prg_return_false: }
+}
+
+% --- Dirty-tree detection ----------------------------------------------------
+% Checks for the -* suffix appended by git describe --dirty='-*'.
+
+\prg_new_conditional:Nnn \__revision_if_dirty: { T, F, TF }
+{
+  \cs_if_exist:NTF \gitDescribe
+  {
+    \tl_set:Nx \l_tmpa_tl { \gitDescribe }
+    \tl_if_in:NnTF \l_tmpa_tl { -* }
+    { \prg_return_true: }
+    { \prg_return_false: }
+  }
+  { \prg_return_true: }
+}
+
+% --- Tag / hash label --------------------------------------------------------
+
+\cs_new_protected:Nn \__revision_tag_or_hash:
+{
+  \__revision_if_usable:NTF \gitFirstTagDescribe
+  { \gitFirstTagDescribe }
+  {
+    \__revision_if_usable:NTF \gitAbbrevHash
+    { rev.\gitAbbrevHash }
+    { trunk }
+  }
+}
+
+% --- Git commit date parsing -------------------------------------------------
+% Parses \gitAuthorIsoDate ("YYYY-MM-DD HH:MM:SS TZ") into a datetime2
+% timestamp named "gitcommit".
+
+\seq_new:N \l__revision_date_seq
+
+\cs_new_protected:Nn \__revision_init_git_date:
+{
+  \__revision_if_usable:NT \gitAuthorIsoDate
+  {
+    \tl_set:Nx \l_tmpa_tl { \gitAuthorIsoDate }
+    \seq_set_split:NnV \l__revision_date_seq { ~ } \l_tmpa_tl
+    \int_compare:nNnT { \seq_count:N \l__revision_date_seq } > { 1 }
+      {
+        \exp_args:Nnx \DTMsavetimestamp { gitcommit }
+        { \seq_item:Nn \l__revision_date_seq {1} T \seq_item:Nn \l__revision_date_seq {2} Z }
+      }
+  }
+}
+
+\AtBeginDocument { \__revision_init_git_date: }
+
+% --- Date selection: commit date if clean, current date if dirty -------------
+
+\cs_new_protected:Nn \__revision_gitdate_or:n
+{
+  \__revision_if_dirty:TF
+  { #1 }
+  {
+    \cs_if_exist:cTF { @dtm@gitcommit@year }
+    { \DTMuse{gitcommit} }
+    { #1 }
+  }
+}
+
+\ExplSyntaxOff
+\endinput

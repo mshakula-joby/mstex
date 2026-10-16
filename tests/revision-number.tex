@@ -1,0 +1,10 @@
+% revision-number in a plain document. Needs the git fixture (run-tests).
+\documentclass{article}
+\usepackage{revision-number}
+\begin{document}
+Revision: \makerevision
+
+ISO: \isodate{\gitdateornow}
+
+US: \usdate{\gitdateornow}
+\end{document}

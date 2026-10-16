@@ -1,0 +1,15 @@
+% listings loaded after the theme: code blocks should get the accent color as background.
+\documentclass[aspectratio=169,10pt]{beamer}
+
+\usetheme[palette=orange]{joby}
+\usepackage{listings}
+\title{Listings after}
+\author{Test Author}
+\begin{document}
+\begin{frame}[fragile]{Code}
+	\begin{lstlisting}[language=C++]
+auto& rBuf = GetBuffer(eFccChannel::HousekeepingToAlgorithm0);
+rBuf.Write(rMessage);  // 500 byte slot
+	\end{lstlisting}
+\end{frame}
+\end{document}

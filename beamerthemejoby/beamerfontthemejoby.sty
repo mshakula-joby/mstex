@@ -1,0 +1,70 @@
+% beamerfontthemejoby.sty
+%
+% Joby Sans (from the fonts/ directory next to this file) and a monospace font.
+% Expects LuaLaTeX or XeLaTeX. Monospace uses the first installed font from the list below;
+% Latin Modern Mono is the generic fallback. If Joby Sans is missing, Gotham's fonts are kept.
+
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{beamerfontthemejoby}[2026/10/16 Joby Sans for Beamer]
+
+\RequirePackage{fontspec}
+
+% Directory of this file, found the way TeX found it (so it works from any document directory).
+% Needs LuaTeX's kpse binding; other engines get the system fonts (with a warning below).
+\ifdefined\directlua
+	\edef\jobyfontdir{\directlua{
+		local f = kpse.find_file("beamerfontthemejoby.sty", "tex")
+		if f then tex.sprint(-2, (f:gsub("[^/]*$", "")) .. "fonts/") end
+	}}
+\else
+	\def\jobyfontdir{fonts/}
+\fi
+
+\ExplSyntaxOn
+\tl_const:Nx \c__joby_font_path_tl { \jobyfontdir }
+
+\msg_new:nnn { joby } { joby-sans-missing }
+  { Joby~Sans~fonts~not~found~in~'#1';~using~Gotham~defaults. }
+
+\cs_new_protected:Nn \__joby_set_sans_fonts:
+  {
+    \setsansfont
+      [
+        Path = \c__joby_font_path_tl ,
+        BoldFont = JobySans-Text-600.ttf ,
+        ItalicFont = JobySans-Text-400.ttf ,
+        BoldItalicFont = JobySans-Text-600.ttf ,
+        ItalicFeatures = { FakeSlant = 0.2 } ,
+        BoldItalicFeatures = { FakeSlant = 0.2 } ,
+      ]
+      { JobySans-Text-400.ttf }
+    \newfontfamily \jobydisplayfont
+      [
+        Path = \c__joby_font_path_tl ,
+        BoldFont = JobySans-Display-600.ttf ,
+      ]
+      { JobySans-Display-500.ttf }
+    \setbeamerfont { title } { family = \jobydisplayfont }
+    \setbeamerfont { frametitle } { family = \jobydisplayfont }
+  }
+
+\cs_new_protected:Nn \__joby_set_mono_font:
+  {
+    \clist_map_inline:nn
+      { Ubuntu~Mono , Consolas , Courier~New , Latin~Modern~Mono }
+      {
+        \fontspec_font_if_exist:nT { ##1 }
+          {
+            \setmonofont { ##1 }
+            \clist_map_break:
+          }
+      }
+  }
+
+\file_if_exist:nTF { \c__joby_font_path_tl JobySans-Text-400.ttf }
+  { \__joby_set_sans_fonts: }
+  { \msg_warning:nnx { joby } { joby-sans-missing } { \c__joby_font_path_tl } }
+\__joby_set_mono_font:
+\ExplSyntaxOff
+
+\endinput

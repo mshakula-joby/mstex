@@ -1,0 +1,98 @@
+#!/bin/bash
+# Builds every test document with latexmk (LuaLaTeX) and checks the results.
+# Usage: ./run-tests [name-filter]     e.g. ./run-tests joby-palette
+# Output goes to build/. Exit status is the number of failed tests.
+
+cd "$(dirname "$(realpath "$0")")" || exit 1
+TESTS=$PWD
+export MSTEX_ROOT=$(realpath ..)
+FILTER=${1:-}
+
+# Fixture so revision-number sees a clean tree tagged v1.2.3 (gitinfo2 reads .git/gitHeadInfo.gin
+# from the working directory).
+FIXTURE=$TESTS/build/fixture
+mkdir -p "$FIXTURE/.git"
+cat > "$FIXTURE/.git/gitHeadInfo.gin" <<'GIN'
+\usepackage[
+    shash={abc1234},
+    lhash={abc1234abc1234abc1234abc1234abc1234abc1},
+    authname={Test Author},
+    authemail={test@example.com},
+    authsdate={2026-01-02},
+    authidate={2026-01-02 03:04:05 +0000},
+    authudate={1767323045},
+    commname={Test Author},
+    commemail={test@example.com},
+    commsdate={2026-01-02},
+    commidate={2026-01-02 03:04:05 +0000},
+    commudate={1767323045},
+    refnames={},
+    firsttagdescribe={v1.2.3},
+    reltag={v1.2.3-0-gabc1234}
+]{gitexinfo}
+GIN
+
+failures=0
+
+# build <name> [fixture]: returns 0 if the document compiled without errors.
+build() {
+	local name=$1 fixture=$2 outdir=$TESTS/build
+	if [ -n "$fixture" ]; then
+		outdir=$FIXTURE/out
+		(cd "$FIXTURE" && latexmk -silent -r "$TESTS/.latexmkrc" -outdir="$outdir" "$TESTS/$name.tex" >"$outdir.log" 2>&1)
+	else
+		(latexmk -silent -r "$TESTS/.latexmkrc" "$TESTS/$name.tex" >"$TESTS/build/$name.latexmk.log" 2>&1)
+	fi
+	[ -f "$outdir/$name.pdf" ] && ! grep -q '^!\|^[^ ]*:[0-9]*: ' "$outdir/$name.log"
+}
+
+text_of() {  # text_of <name> [fixture]
+	if [ -n "$2" ]; then pdftotext "$FIXTURE/out/$1.pdf" - 2>/dev/null; else pdftotext "$TESTS/build/$1.pdf" - 2>/dev/null; fi
+}
+
+# NOTE: the discardcontent environment is only checked to compile; it does not currently discard its body.
+
+# check <description> <condition-exit-status>
+pass() { echo "  ok   $1"; }
+fail() { echo "  FAIL $1"; failures=$((failures + 1)); }
+expect_text()    { text_of "$2" "$3" | grep -qF -- "$1" && pass "$2 contains '$1'" || fail "$2 contains '$1'"; }
+expect_no_text() { text_of "$2" "$3" | grep -qF -- "$1" && fail "$2 lacks '$1'" || pass "$2 lacks '$1'"; }
+
+mkdir -p build
+for f in *.tex; do
+	name=${f%.tex}
+	[ "$name" = joby-body ] && continue
+	[[ -n $FILTER && $name != *$FILTER* ]] && continue
+	echo "$name"
+
+	fixture=
+	case $name in revision-number|joby-revision-*) fixture=1 ;; esac
+
+	if [ "$name" = joby-palette-invalid ]; then
+		build "$name" "" && fail "$name fails to compile" || {
+			grep -q "Unknown palette" "build/$name.log" && pass "$name reports 'Unknown palette'" || fail "$name reports 'Unknown palette'"
+		}
+		continue
+	fi
+
+	if build "$name" $fixture; then pass "$name compiles"; else fail "$name compiles"; continue; fi
+
+	case $name in
+		joby-palette-*) expect_text "Joby Theme Test" "$name" ;;
+		joby-no-options) expect_no_text "git:" "$name" ;;
+		joby-revision-*) expect_text "(git:v1.2.3)" "$name" 1 ;;
+		revision-number)
+			expect_text "(git:v1.2.3)" "$name" 1
+			expect_text "2026-01-02 03:04:05" "$name" 1 ;;
+		draft-tools-draft)
+			expect_text "a drafting note" "$name"; expect_text "an idea" "$name"; expect_text "some directions" "$name"
+			expect_text "[spaced out]" "$name" ;;
+		draft-tools-final)
+			expect_text "a drafting note" "$name"; expect_no_text "an idea" "$name"; expect_no_text "some directions" "$name"
+			expect_text "[spaced out]" "$name" ;;
+	esac
+done
+
+echo
+[ $failures -eq 0 ] && echo "All tests passed." || echo "$failures check(s) failed."
+exit $failures

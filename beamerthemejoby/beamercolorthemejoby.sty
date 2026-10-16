@@ -1,0 +1,96 @@
+% beamercolorthemejoby.sty
+%
+% Joby brand colors for Beamer on top of the Gotham color slots.
+% Normally loaded by \usetheme[palette=<name>]{joby}; used on its own it picks the default palette.
+
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{beamercolorthemejoby}[2026/10/16 Joby brand colors for Beamer]
+
+\ExplSyntaxOn
+\tl_if_exist:NF \g_joby_palette_tl
+  {
+    \tl_new:N \g_joby_palette_tl
+    \tl_gset:Nn \g_joby_palette_tl { blue }
+  }
+\ExplSyntaxOff
+
+% Joby brand palette.
+\definecolor{JobyBlack}{HTML}{0E1620}
+\definecolor{JobyOffBlack}{HTML}{0E1620}
+\definecolor{JobyWhite}{HTML}{F5F4ED}
+\definecolor{JobyOffWhite}{HTML}{F5F4DF}
+\definecolor{JobyGray}{HTML}{CDD0D1}
+\definecolor{JobyDarkGray}{HTML}{A8ACAD}
+
+\definecolor{JobyBlue}{HTML}{007AE5}
+\definecolor{JobyDarkBlue}{HTML}{1C3F99}
+\definecolor{JobyDarkBlueUI}{HTML}{083E6F}
+\definecolor{JobyLightBlue}{HTML}{7CC3FF}
+\definecolor{JobyLightestBlue}{HTML}{C1DFEF}
+
+\definecolor{JobyYellow}{HTML}{FFB300}
+\definecolor{JobyLightYellow}{HTML}{FFCC54}
+\definecolor{JobyLightestYellow}{HTML}{FFDF94}
+
+\definecolor{JobyOrange}{HTML}{EB6110}
+\definecolor{JobyBrightOrange}{HTML}{FF660D}  % primary of color pair 2
+\definecolor{JobyDarkOrange}{HTML}{D04C00}
+\definecolor{JobyLightOrange}{HTML}{FF9058}
+\definecolor{JobyLightestOrange}{HTML}{FFD9C9}
+
+\definecolor{JobyRed}{HTML}{E64839}
+\definecolor{JobyDarkRed}{HTML}{992E2E}
+\definecolor{JobyLightRed}{HTML}{EE6371}
+\definecolor{JobyPink}{HTML}{FB9DA6}
+
+\definecolor{JobyGreen}{HTML}{00994C}
+\definecolor{JobyDarkGreen}{HTML}{006141}
+\definecolor{JobyLightGreen}{HTML}{3EC26A}
+\definecolor{JobyLightestGreen}{HTML}{73E573}
+
+\definecolor{JobyPurple}{HTML}{883DF2}
+\definecolor{JobyDarkPurple}{HTML}{491C8A}
+\definecolor{JobyLightPurple}{HTML}{B580FF}
+\definecolor{JobyLightestPurple}{HTML}{D2B2FF}
+
+% Constant Gotham slots.
+\colorlet{colorPale}{JobyWhite}            % background
+\colorlet{colorDark}{JobyOffBlack}         % foreground text
+\colorlet{colorAreversed}{JobyWhite}       % text on colorA
+
+% Color pairs from brand guide section 8.3. Each sets
+% colorA (frame titles, standout slides), colorC (progress bar), colorD (alerts), colorE (examples),
+% colorB (progress bar track, blocks; the pair's light color where it has one),
+% colorAccent (the thin strip at the bottom of each pair: use it for frames and borders, e.g. draw=colorAccent).
+\ExplSyntaxOn
+\cs_new_protected:Nn \__joby_set_palette:nnnnnn
+  {
+    \colorlet { colorA } { #1 }
+    \colorlet { colorC } { #2 }
+    \colorlet { colorD } { #3 }
+    \colorlet { colorE } { #4 }
+    \colorlet { colorB } { #5 }
+    \colorlet { colorAccent } { #6 }
+  }
+\msg_new:nnn { joby } { unknown-palette }
+  { Unknown~palette~'#1'.~Use~blue~(also~default~or~light),~orange,~green,~navy~or~osaka. }
+% 'default' and 'light' are aliases for the default (blue) scheme.
+\clist_if_in:nVT { default, light } \g_joby_palette_tl
+  { \tl_gset:Nn \g_joby_palette_tl { blue } }
+\str_case:VnF \g_joby_palette_tl
+  {
+    { blue }     { \__joby_set_palette:nnnnnn { JobyBlue }         { JobyDarkBlue } { JobyOrange } { JobyDarkBlue } { JobyDarkGray } { JobyLightestOrange } }
+    { orange }   { \__joby_set_palette:nnnnnn { JobyBrightOrange } { JobyDarkBlue } { JobyBlue }   { JobyDarkBlue } { JobyLightestOrange } { JobyYellow } }
+    { green }    { \__joby_set_palette:nnnnnn { JobyGreen }        { JobyDarkBlue } { JobyBlue }   { JobyDarkBlue } { JobyDarkGray } { JobyBlue } }
+    { navy }     { \__joby_set_palette:nnnnnn { JobyDarkBlue }     { JobyBlue }     { JobyRed }    { JobyBlue } { JobyLightestOrange } { JobyPink } }
+    { osaka }    { \__joby_set_palette:nnnnnn { JobyBlue }         { JobyDarkBlue } { JobyRed }    { JobyDarkBlue } { JobyLightestOrange } { JobyPink } }
+  }
+  {
+    \msg_error:nnV { joby } { unknown-palette } \g_joby_palette_tl
+  }
+% Pairs that include the peach get a peach-tinted background and block color.
+\clist_if_in:nVT { orange, navy, osaka } \g_joby_palette_tl
+  { \colorlet { colorPale } { JobyLightestOrange!35!JobyWhite } }
+\ExplSyntaxOff
+\gothamReloadColors
+\endinput

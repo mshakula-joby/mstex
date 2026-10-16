@@ -1,0 +1,14 @@
+% draft-tools without the draft option: notes and ideas disappear, \draft keeps its text.
+\documentclass{article}
+\usepackage{draft-tools}
+\begin{document}
+Before. \draft{a drafting note} After.
+
+\idea{an idea} and \directions{some directions}.
+
+\begin{discardcontent}
+DISCARDED-TEXT
+\end{discardcontent}
+
+Trimmed: [\trimspaces{   spaced out   }]
+\end{document}
