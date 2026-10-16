@@ -9,6 +9,14 @@
 \RequirePackage[en-US]{datetime2}
 \RequirePackage{gitinfo2}
 
+% Local UTC offset ("-0700") for dirty trees, whose date is the current time. Needs LuaTeX; elsewhere
+% the zone is simply omitted.
+\ifdefined\directlua
+  \edef\revision@localzone{\directlua{tex.sprint(-2, os.date(string.char(37) .. "z"))}}
+\else
+  \def\revision@localzone{}
+\fi
+
 % ==============================================================================
 %                            PUBLIC COMMANDS
 % ==============================================================================
@@ -44,7 +52,7 @@
 % ISO date followed by the git tag or abbreviated hash.
 \NewDocumentCommand{\makerevision}{}
 {
-  \isodate{\gitdateornow} ~ (git:\__revision_tag_or_hash:)
+  \isodate{\gitdateornow} \__revision_zone: \c_space_tl (git:\__revision_tag_or_hash:)
 }
 
 \ExplSyntaxOff
@@ -105,6 +113,7 @@
 % timestamp named "gitcommit".
 
 \seq_new:N \l__revision_date_seq
+\tl_new:N \g__revision_git_zone_tl
 
 \cs_new_protected:Nn \__revision_init_git_date:
 {
@@ -116,11 +125,35 @@
       {
         \exp_args:Nnx \DTMsavetimestamp { gitcommit }
         { \seq_item:Nn \l__revision_date_seq {1} T \seq_item:Nn \l__revision_date_seq {2} Z }
+        \int_compare:nNnT { \seq_count:N \l__revision_date_seq } > { 2 }
+          { \tl_gset:Nx \g__revision_git_zone_tl { \seq_item:Nn \l__revision_date_seq {3} } }
       }
   }
 }
 
 \AtBeginDocument { \__revision_init_git_date: }
+
+% --- Timezone ----------------------------------------------------------------
+% Formats a UTC offset such as -0700 as ISO 8601 "-07:00", or "Z" for UTC; empty if unknown.
+% It follows the time directly, without a space.
+
+\cs_new:Nn \__revision_format_zone:n
+{
+  \tl_if_blank:nF { #1 }
+  {
+    \str_if_eq:eeTF { \str_range:nnn { #1 } { 2 } { 5 } } { 0000 }
+    { Z }
+    { \str_item:nn { #1 } { 1 } \str_range:nnn { #1 } { 2 } { 3 } : \str_range:nnn { #1 } { 4 } { 5 } }
+  }
+}
+
+% The commit's zone if the tree is clean, otherwise the local zone (matching the date used).
+\cs_new:Nn \__revision_zone:
+{
+  \__revision_if_dirty:TF
+  { \exp_args:NV \__revision_format_zone:n \revision@localzone }
+  { \exp_args:NV \__revision_format_zone:n \g__revision_git_zone_tl }
+}
 
 % --- Date selection: commit date if clean, current date if dirty -------------
 

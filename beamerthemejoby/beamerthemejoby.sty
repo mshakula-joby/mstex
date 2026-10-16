@@ -34,12 +34,20 @@
 
 % Load the base theme first.
 % See https://ctan.org/tex-archive/macros/latex/contrib/beamer-contrib/themes/beamertheme-gotham?lang=en
+% Heading pages (section, subsection) are numbered like any other slide, so that the table of contents
+% can cite the number shown on them. Gotham only provides these options if they are not defined yet.
+\newcommand{\partpageOptions}{}
+\newcommand{\sectionpageOptions}{}
+\newcommand{\subsectionpageOptions}{}
+\newcommand{\subsubsectionpageOptions}{}
+
 \usetheme{gotham}
 
 % Loaded with \RequirePackage: \usecolortheme/\useoutertheme here make LuaTeX fail at PDF output with a
 % font-embedding error ("cannot find file ''") once Joby Sans is loaded.
 \RequirePackage{beamercolorthemejoby}
 \RequirePackage{beamerfontthemejoby}
+\RequirePackage{beamerinnerthemejoby}
 \RequirePackage{beamerouterthemejoby}
 
 % Joby Sans has deeper descenders than Fira, which Gotham's tiny footline depth clips at the page edge.

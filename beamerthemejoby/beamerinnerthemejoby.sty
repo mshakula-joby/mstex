@@ -1,0 +1,109 @@
+% beamerinnerthemejoby.sty
+%
+% Slide numbers in the table of contents: each section and subsection entry gets the number of the
+% slide it starts on, right-aligned. Requires the Gotham theme (its "bullet" and "simple" styles).
+
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{beamerinnerthemejoby}[2026/10/16 Slide numbers in the Beamer table of contents]
+
+\RequirePackage{etoolbox}
+
+% The number shown is the footer's number of the section's (or subsection's) heading slide, so it
+% matches what the reader sees on that slide. If heading pages are turned off it is the first slide
+% after the heading. Beamer's own anchors are physical pages and are not used. The numbers are recorded
+% in the .aux file, so the first run shows none (latexmk reruns as needed).
+\newcommand{\jobytocpage}[2]{\global\@namedef{jobytoc@#1}{#2}}
+\newcommand{\jobytocbefore}{0}
+\newcommand{\jobytocrecord}[1]{%
+	\immediate\write\@auxout{\string\jobytocpage{#1}{%
+		\number\numexpr\c@framenumber\ifnum\c@framenumber>\jobytocbefore\else+1\fi\relax}}%
+}
+\AtBeginDocument{%
+	\pretocmd{\beamer@section}{\edef\jobytocbefore{\the\c@framenumber}}{}{%
+		\PackageWarning{beamerinnerthemejoby}{Could not patch \string\beamer@section; no TOC slide numbers}}%
+	\apptocmd{\beamer@section}{\jobytocrecord{sec:\thesection}}{}{}%
+	\pretocmd{\beamer@subsection}{\edef\jobytocbefore{\the\c@framenumber}}{}{%
+		\PackageWarning{beamerinnerthemejoby}{Could not patch \string\beamer@subsection; no TOC slide numbers}}%
+	\apptocmd{\beamer@subsection}{\jobytocrecord{sub:\thesection.\thesubsection}}{}{}%
+}
+
+% The outline slides are not counted among the numbered slides: their footer shows a lowercase
+% roman numeral (i, ii, ...) instead. Gotham's [toc] frame option runs tocenv.
+\newcounter{jobytocframe}
+\renewenvironment{tocenv}{%
+	\usebeamertemplate{toc page}%
+	\beamer@noframenumberingtrue
+	\stepcounter{jobytocframe}%
+	\def\insertframenumber{\romannumeral\value{jobytocframe}}%
+}{}
+
+% Entries are set in an \hbox to the full line width, with the number flush right. (\hbox to rather than
+% \makebox, whose own \hss would share the stretch with the \hfill that right-aligns the number.)
+\newcommand{\jobytocwidth}{\linewidth}
+\newcommand{\jobytocnumber}[1]{{\usebeamercolor[fg]{footer}\usebeamerfont{footnote}\@ifundefined{jobytoc@#1}{}{\csname jobytoc@#1\endcsname}}}
+
+% Beamer refuses to redefine templates, so undefine Gotham's first.
+\@for\jobytmp:={section in toc,subsection in toc,section in toc shaded,subsection in toc shaded}\do{%
+	\@for\jobytmpstyle:={gotham bullet,gotham simple}\do{%
+		\expandafter\let\csname beamer@@tmpop@\jobytmp @\jobytmpstyle\endcsname\@undefined
+	}%
+}
+
+\defbeamertemplate{section in toc}{gotham bullet}{
+	\leavevmode\hbox to \jobytocwidth{%
+		\hspace*{0.4cm}\tikz[baseline=-0.5ex]\node[section number]{\textbf{\inserttocsectionnumber}};
+		\ \tikz[baseline=-0.5ex]\node[section]{\usebeamerfont*{toc title}\inserttocsection};%
+		\hfill\jobytocnumber{sec:\inserttocsectionnumber}%
+	}\\[-0.35cm]
+	\hspace*{1.13cm}{\usebeamercolor*[fg]{footer} \rule{0.69\linewidth}{0.2pt}{\par\vskip-0.35\baselineskip}\nointerlineskip}
+}
+\defbeamertemplate{subsection in toc}{gotham bullet}{
+	\leavevmode\hbox to \jobytocwidth{%
+		\hspace*{0.53cm}\tikz[baseline=-0.5ex]\node[subsection number]{};
+		\hspace*{0.5cm}\tikz[baseline=-0.5ex]\node[subsection]{\usebeamerfont*{toc subtitle}\inserttocsubsection \gotham@strut};%
+		\hfill\jobytocnumber{sub:\inserttocsectionnumber.\inserttocsubsectionnumber}%
+	}
+	\par \vspace{-0.38cm}
+}
+\defbeamertemplate{section in toc shaded}{gotham bullet}{
+	\leavevmode\hbox to \jobytocwidth{%
+		\hspace*{0.4cm}\tikz[baseline=-0.5ex]\node[section number, fill=colorBackElement!40]{\usebeamerfont*{toc subtitle}\textbf{\inserttocsectionnumber}};
+		\ \tikz[baseline=-0.5ex]\node[section, text=colorBackElement!20]{\usebeamerfont*{toc title}\inserttocsection};%
+		\hfill{\color{colorBackElement!20}\jobytocnumber{sec:\inserttocsectionnumber}}%
+	}\\[-0.35cm]
+	\hspace*{1.13cm}{\usebeamercolor*[fg]{footer} \rule{0.69\linewidth}{0.2pt}{\par\vskip-0.35\baselineskip}\nointerlineskip}
+}
+\defbeamertemplate{subsection in toc shaded}{gotham bullet}{
+	\leavevmode\hbox to \jobytocwidth{%
+		\hspace*{0.53cm}\tikz[baseline=-0.5ex]\node[subsection number,fill=colorBackElement!20]{};
+		\hspace*{0.5cm}\tikz[baseline=-0.5ex]\node[subsection, text=colorBackElement!20]{\usebeamerfont*{toc subtitle}\inserttocsubsection \gotham@strut};%
+		\hfill{\color{colorBackElement!20}\jobytocnumber{sub:\inserttocsectionnumber.\inserttocsubsectionnumber}}%
+	}
+	\par \vspace{-0.38cm}
+}
+
+\defbeamertemplate{section in toc}{gotham simple}{
+	\leavevmode\hbox to \linewidth{{{\inserttocsectionnumber}.}~\inserttocsection\hfill\jobytocnumber{sec:\inserttocsectionnumber}}
+	\par \vspace{-0.2cm}
+}
+\defbeamertemplate{subsection in toc}{gotham simple}{
+	\leavevmode
+	\hbox to \linewidth{\quad{{\inserttocsectionnumber}.\inserttocsubsectionnumber.}~\inserttocsubsection\hfill\jobytocnumber{sub:\inserttocsectionnumber.\inserttocsubsectionnumber}}
+	\par \vspace{-0.2cm}
+}
+\defbeamertemplate{section in toc shaded}{gotham simple}{
+	\leavevmode
+	\begin{colormixin}{20!parent.bg}
+		\hbox to \linewidth{{{\inserttocsectionnumber}.}~\inserttocsection\hfill\jobytocnumber{sec:\inserttocsectionnumber}}
+	\end{colormixin}
+	\par \vspace{-0.2cm}
+}
+\defbeamertemplate{subsection in toc shaded}{gotham simple}{
+	\leavevmode
+	\begin{colormixin}{20!parent.bg}
+		\hbox to \linewidth{\quad{{\inserttocsectionnumber}.\inserttocsubsectionnumber.}~\inserttocsubsection\hfill\jobytocnumber{sub:\inserttocsectionnumber.\inserttocsubsectionnumber}}
+	\end{colormixin}
+	\par \vspace{-0.2cm}
+}
+
+\endinput
