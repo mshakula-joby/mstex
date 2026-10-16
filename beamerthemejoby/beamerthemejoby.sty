@@ -9,7 +9,9 @@
 %
 % Options:
 %   palette=<name>   color pair from section 8.3 of the brand guide's color page:
-%                    blue (default; also default or light), orange, green, navy, osaka.
+%                    blue (default; also default or light), orange, green, navy, osaka. Add -dark for
+%                    the dark variant (osaka-dark, ...); dark alone is blue-dark. Dark variants use a
+%                    more muted version of the primary color for title bars and standout slides.
 %   proprietary      marks the deck as proprietary: adds a notice to the footer and a notice slide
 %                    after the title page.
 %
@@ -27,10 +29,11 @@
 %                   Number lists show physical PDF pages, so load glossaries with nonumberlist.
 %
 % Appendix (after \appendix):
-%   sections are lettered (A, B, ...), left out of the outline, and every slide uses the standin
-%   frame style. Beamer's "Part I: Appendix" page is dropped. Use one \section per part, with a frame
-%   that holds \printbibliography[heading=none] (biblatex; use allowframebreaks), \listoffigures or
-%   \listoftables, or \printglossaries.
+%   sections are lettered (A, B, ...) and left out of the outline. Appendix slides use the standin frame
+%   style by default; an explicit frame style ([standout], [plain], ...) overrides it. The slide numbers
+%   keep counting (appendixnumberbeamer's restart at 1 is undone). Beamer's "Part I: Appendix" page is
+%   dropped. Use one \section per part, with a frame that holds \printbibliography[heading=none]
+%   (biblatex; use allowframebreaks), \listoffigures or \listoftables, or \printglossaries.
 %
 % Lists of figures and tables:
 %   Beamer ignores \listoffigures and \listoftables; here they print each caption with the slide number
@@ -112,8 +115,22 @@
 % Joby Sans has deeper descenders than Fira, which Gotham's tiny footline depth clips at the page edge.
 \setlength{\gothamFootlineDepth}{1.2ex}
 
+\ExplSyntaxOn
+\bool_if:NTF \g_joby_dark_bool
+  {
+    \gothamset { background = dark }
+    % Gotham's dark mode makes the title bars and standout slides light; use the palette's muted primary color.
+    % (Gotham applies its dark colors late, so this runs at the start of the document.)
+    \AtBeginDocument
+      {
+        \colorlet { colorFrametitle } { colorAmuted }
+        \colorlet { colorStandout } { colorAmuted }
+        \setbeamercolor { frametitle } { fg = JobyWhite }
+      }
+  }
+  { \gothamset { background = light } }
+\ExplSyntaxOff
 \gothamset{
-	background=light,
 	numbering=framenumber,
 	parttocframe default=off,
 	sectiontocframe default=off,

@@ -81,7 +81,19 @@ for f in *.tex; do
 		joby-palette-*)
 			expect_text "Joby Theme Test" "$name"
 			# The title page has no footer.
-			pdftotext -f 1 -l 1 "build/$name.pdf" - | grep -q "JOBY AVIATION" && fail "$name title page has no footer" || pass "$name title page has no footer" ;;
+			pdftotext -f 1 -l 1 "build/$name.pdf" - | grep -q "JOBY AVIATION" && fail "$name title page has no footer" || pass "$name title page has no footer"
+			# Dark palettes have a dark background, the others a light one.
+			pdftoppm -r 20 -f 1 -l 1 -png "build/$name.pdf" "build/$name-bg"
+			dark=; label=light
+			[[ $name == *-dark || $name == joby-palette-dark ]] && { dark=1; label=dark; }
+			python3 -I - "$dark" "build/$name-bg"-*.png <<'PY' && pass "$name background is $label" || fail "$name background is $label"
+import sys
+from PIL import Image
+r, g, b = Image.open(sys.argv[2]).convert("RGB").getpixel((3, 30))
+is_dark = (r + g + b) / 3 < 100
+sys.exit(0 if is_dark == bool(sys.argv[1]) else 1)
+PY
+			;;
 		joby-toc)
 			p2=$(pdftotext -f 2 -l 2 "build/$name.pdf" -)
 			for n in i 1 3 6; do grep -qx "$n" <<<"$p2" && pass "$name outline page shows '$n'" || fail "$name outline page shows '$n'"; done ;;
@@ -91,10 +103,23 @@ for f in *.tex; do
 			expect_text "PROPRIETARY INFORMATION. DO NOT DISTRIBUTE." "$name"
 			expect_text "JOBY AVIATION" "$name" ;;
 		joby-appendix)
-			expect_text "A. Bibliography" "$name"; expect_text "B. Lists of Figures and Tables" "$name"; expect_text "C. Glossary" "$name"
+			expect_text "A. Bibliography" "$name"; expect_text "B. Lists of Figures and Tables" "$name"; expect_text "D. Glossary" "$name"; expect_text "C. Explicit styles" "$name"
 			expect_text "Lamport" "$name"; expect_no_text "knuth1984" "$name"
 			expect_text "A first figure" "$name"; expect_text "A first table" "$name"
 			expect_text "Flight Control Computer" "$name"
+			# Slide numbers continue into the appendix instead of restarting (appendixnumberbeamer is loaded).
+			footer_number() { for pg in $(seq 1 30); do pdftotext -f $pg -l $pg "build/$name.pdf" - 2>/dev/null | grep -q "^$1" && { pdftotext -f $pg -l $pg "build/$name.pdf" - | grep -E '^[0-9]+$' | tail -1; return; }; done; }
+			main_n=$(footer_number "Content"); app_n=$(footer_number "A. Bibliography")
+			[ -n "$main_n" ] && [ -n "$app_n" ] && [ "$app_n" -gt "$main_n" ] && pass "$name numbering continues in the appendix ($main_n -> $app_n)" || fail "$name numbering continues in the appendix ($main_n -> $app_n)"
+			# Explicit frame styles override the appendix default: the [standout] frame is not a standin slide.
+			for pg in $(seq 1 30); do pdftotext -f $pg -l $pg "build/$name.pdf" - 2>/dev/null | grep -q "^Standout in the appendix" && break; done
+			pdftoppm -r 20 -f $pg -l $pg -png "build/$name.pdf" "build/$name-standout"
+			python3 -I - "build/$name-standout"-*.png <<'PY' && pass "$name explicit [standout] overrides the appendix style" || fail "$name explicit [standout] overrides the appendix style"
+import sys
+from PIL import Image
+r, g, b = Image.open(sys.argv[1]).convert("RGB").getpixel((60, 45))
+sys.exit(0 if b - r > 80 else 1)  # blue standout background
+PY
 			# The appendix is not in the outline (page 2), and its slides use standin (no title bar).
 			pdftotext -f 2 -l 2 "build/$name.pdf" - | grep -q "Bibliography\|Glossary" && fail "$name outline omits the appendix" || pass "$name outline omits the appendix"
 			for pg in $(seq 1 20); do pdftotext -f $pg -l $pg "build/$name.pdf" - 2>/dev/null | grep -q "^References" && break; done

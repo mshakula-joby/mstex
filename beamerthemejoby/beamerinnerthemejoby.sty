@@ -123,21 +123,48 @@
 	\long\def\beamer@sectionintoc##1##2##3##4##5{}%
 	\long\def\beamer@subsectionintoc##1##2##3##4##5##6{}%
 }
+\newif\ifjobyinappendix
+% Appendix frames default to the standin style. The default is applied as a frame option that comes before
+% the frame's own options, so an explicit frame style ([standout], [plain], ...) overrides it.
+% The standin default sets the frame title's foreground explicitly, and setbeamercolor keeps keys that are
+% not repeated, so the foreground is set again here (white in the dark variants).
+\ExplSyntaxOn
+\NewDocumentCommand{\jobyrestoreframetitlecolor}{}
+  {
+    \bool_if:NTF \g_joby_dark_bool
+      { \setbeamercolor { frametitle } { use = primary~palette, parent = primary~palette, fg = JobyWhite, bg = colorFrametitle } }
+      { \setbeamercolor { frametitle } { use = primary~palette, parent = primary~palette, fg = primary~palette.fg, bg = colorFrametitle } }
+  }
+\ExplSyntaxOff
+\newcommand{\jobyappendixdefaults}{%
+	\ifjobyinappendix\setkeys{beamerframe}{standin}\fi
+}
+\patchcmd{\beamer@@@@frame}
+	{\setkeys{beamerframe}{environment=frame}}
+	{\setkeys{beamerframe}{environment=frame}\jobyappendixdefaults}
+	{}
+	{\PackageWarning{beamerinnerthemejoby}{Could not patch \string\beamer@@@@frame; appendix frames keep their own style}}
+% Gotham's standout style does not set the frame title colors that the default standin changed.
+\renewenvironment{standoutenv}{\usebeamertemplate{standout}\jobyrestoreframetitlecolor}{}
 \newcommand{\jobyappendixsetup}{%
 	\setcounter{section}{0}\setcounter{subsection}{0}%
 	\renewcommand{\thesection}{\Alph{section}}%
 	\def\insertsectionnumber{\@Alph\c@section}%
 	\addtocontents{toc}{\protect\jobytocappendix}%
-	\usebeamertemplate{standin}%
+	\global\jobyinappendixtrue
 }
+% appendixnumberbeamer restarts the slide numbers at 1 in the appendix; the numbering continues instead.
+\newcommand{\jobyrestoreframenumber}[1]{\setcounter{framenumber}{#1}}
 \AtBeginDocument{%
 	\let\jobyorigappendix\appendix
 	\renewcommand{\appendix}{%
 		\jobyappendixsetup
+		\edef\jobysavedframenumber{\the\c@framenumber}%
 		% Beamer starts the appendix with a "Part I: Appendix" page; the lettered sections are enough.
 		\let\jobyoldpart\part \let\part\@gobble
 		\jobyorigappendix
 		\let\part\jobyoldpart
+		\jobyrestoreframenumber{\jobysavedframenumber}%
 	}%
 }
 

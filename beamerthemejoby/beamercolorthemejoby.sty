@@ -62,9 +62,11 @@
 % colorA (frame titles, standout slides), colorC (progress bar), colorD (alerts), colorE (examples),
 % colorB (progress bar track, blocks; the pair's light color where it has one),
 % colorAccent (the thin strip at the bottom of each pair: use it for frames and borders, e.g. draw=colorAccent),
-% colorPale (the slide background: Joby White, or tinted with the pair's peach where it has one).
+% colorPale (the slide background: Joby White, or tinted with the pair's peach where it has one),
+% colorAmuted (a more muted version of the primary color, used for title bars and standout slides in the
+% dark variants).
 \ExplSyntaxOn
-\cs_new_protected:Nn \__joby_set_palette:nnnnnnn
+\cs_new_protected:Nn \__joby_set_palette:nnnnnnnn
   {
     \colorlet { colorA } { #1 }
     \colorlet { colorC } { #2 }
@@ -73,22 +75,40 @@
     \colorlet { colorB } { #5 }
     \colorlet { colorAccent } { #6 }
     \colorlet { colorPale } { #7 }
+    \colorlet { colorAmuted } { #8 }
   }
 \msg_new:nnn { joby } { unknown-palette }
-  { Unknown~palette~'#1'.~Use~blue~(also~default~or~light),~orange,~green,~navy~or~osaka. }
+  { Unknown~palette~'#1'.~Use~blue~(also~default~or~light),~orange,~green,~navy~or~osaka,~each~optionally~with~-dark~(dark~alone~is~blue-dark). }
+% A -dark suffix selects the dark variant of a palette; "dark" alone is blue-dark.
+\bool_if_exist:NF \g_joby_dark_bool { \bool_new:N \g_joby_dark_bool }
+\str_if_eq:VnT \g_joby_palette_tl { dark }
+  { \tl_gset:Nn \g_joby_palette_tl { blue-dark } }
+\str_if_eq:eeT { \tl_range:Nnn \g_joby_palette_tl { -5 } { -1 } } { -dark }
+  {
+    \bool_gset_true:N \g_joby_dark_bool
+    \tl_gset:Nx \g_joby_palette_tl { \tl_range:Nnn \g_joby_palette_tl { 1 } { -6 } }
+  }
 % 'default' and 'light' are aliases for the default (blue) scheme.
 \clist_if_in:nVT { default, light } \g_joby_palette_tl
   { \tl_gset:Nn \g_joby_palette_tl { blue } }
 \str_case:VnF \g_joby_palette_tl
   {
-    { blue }     { \__joby_set_palette:nnnnnnn { JobyBlue }         { JobyDarkBlue } { JobyOrange } { JobyDarkBlue } { JobyDarkGray } { JobyLightestOrange } { JobyWhite } }
-    { orange }   { \__joby_set_palette:nnnnnnn { JobyBrightOrange } { JobyDarkBlue } { JobyBlue }   { JobyDarkBlue } { JobyLightestOrange } { JobyYellow } { JobyLightestOrange!35!JobyWhite } }
-    { green }    { \__joby_set_palette:nnnnnnn { JobyGreen }        { JobyDarkBlue } { JobyBlue }   { JobyDarkBlue } { JobyDarkGray } { JobyBlue } { JobyWhite } }
-    { navy }     { \__joby_set_palette:nnnnnnn { JobyDarkBlue }     { JobyBlue }     { JobyRed }    { JobyBlue } { JobyLightestOrange } { JobyPink } { JobyLightestOrange!35!JobyWhite } }
-    { osaka }    { \__joby_set_palette:nnnnnnn { JobyBlue }         { JobyDarkBlue } { JobyRed }    { JobyDarkBlue } { JobyLightestOrange } { JobyPink } { JobyLightestOrange!35!JobyWhite } }
+    { blue }     { \__joby_set_palette:nnnnnnnn { JobyBlue }         { JobyDarkBlue } { JobyOrange } { JobyDarkBlue } { JobyDarkGray } { JobyLightestOrange } { JobyWhite } { JobyDarkBlueUI } }
+    { orange }   { \__joby_set_palette:nnnnnnnn { JobyBrightOrange } { JobyDarkBlue } { JobyBlue }   { JobyDarkBlue } { JobyLightestOrange } { JobyYellow } { JobyLightestOrange!35!JobyWhite } { JobyDarkOrange } }
+    { green }    { \__joby_set_palette:nnnnnnnn { JobyGreen }        { JobyDarkBlue } { JobyBlue }   { JobyDarkBlue } { JobyDarkGray } { JobyBlue } { JobyWhite } { JobyDarkGreen } }
+    { navy }     { \__joby_set_palette:nnnnnnnn { JobyDarkBlue }     { JobyBlue }     { JobyRed }    { JobyBlue } { JobyLightestOrange } { JobyPink } { JobyLightestOrange!35!JobyWhite } { JobyDarkBlue } }
+    { osaka }    { \__joby_set_palette:nnnnnnnn { JobyBlue }         { JobyDarkBlue } { JobyRed }    { JobyDarkBlue } { JobyLightestOrange } { JobyPink } { JobyLightestOrange!35!JobyWhite } { JobyDarkBlueUI } }
   }
   {
     \msg_error:nnV { joby } { unknown-palette } \g_joby_palette_tl
+  }
+% Dark variants: the same colors on an off-black background with Joby White text (Gotham's dark
+% background swaps colorDark and colorPale, so the peach tint is dropped).
+% The progress bar and title separator would be dark blue on dark blue, so they use Joby Blue.
+\bool_if:NT \g_joby_dark_bool
+  {
+    \colorlet { colorPale } { JobyWhite }
+    \colorlet { colorC } { JobyBlue }
   }
 \ExplSyntaxOff
 \gothamReloadColors
