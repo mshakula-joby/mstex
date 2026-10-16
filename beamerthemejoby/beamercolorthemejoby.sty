@@ -61,9 +61,10 @@
 % Color pairs from brand guide section 8.3. Each sets
 % colorA (frame titles, standout slides), colorC (progress bar), colorD (alerts), colorE (examples),
 % colorB (progress bar track, blocks; the pair's light color where it has one),
-% colorAccent (the thin strip at the bottom of each pair: use it for frames and borders, e.g. draw=colorAccent).
+% colorAccent (the thin strip at the bottom of each pair: use it for frames and borders, e.g. draw=colorAccent),
+% colorPale (the slide background: Joby White, or tinted with the pair's peach where it has one).
 \ExplSyntaxOn
-\cs_new_protected:Nn \__joby_set_palette:nnnnnn
+\cs_new_protected:Nn \__joby_set_palette:nnnnnnn
   {
     \colorlet { colorA } { #1 }
     \colorlet { colorC } { #2 }
@@ -71,6 +72,7 @@
     \colorlet { colorE } { #4 }
     \colorlet { colorB } { #5 }
     \colorlet { colorAccent } { #6 }
+    \colorlet { colorPale } { #7 }
   }
 \msg_new:nnn { joby } { unknown-palette }
   { Unknown~palette~'#1'.~Use~blue~(also~default~or~light),~orange,~green,~navy~or~osaka. }
@@ -79,18 +81,15 @@
   { \tl_gset:Nn \g_joby_palette_tl { blue } }
 \str_case:VnF \g_joby_palette_tl
   {
-    { blue }     { \__joby_set_palette:nnnnnn { JobyBlue }         { JobyDarkBlue } { JobyOrange } { JobyDarkBlue } { JobyDarkGray } { JobyLightestOrange } }
-    { orange }   { \__joby_set_palette:nnnnnn { JobyBrightOrange } { JobyDarkBlue } { JobyBlue }   { JobyDarkBlue } { JobyLightestOrange } { JobyYellow } }
-    { green }    { \__joby_set_palette:nnnnnn { JobyGreen }        { JobyDarkBlue } { JobyBlue }   { JobyDarkBlue } { JobyDarkGray } { JobyBlue } }
-    { navy }     { \__joby_set_palette:nnnnnn { JobyDarkBlue }     { JobyBlue }     { JobyRed }    { JobyBlue } { JobyLightestOrange } { JobyPink } }
-    { osaka }    { \__joby_set_palette:nnnnnn { JobyBlue }         { JobyDarkBlue } { JobyRed }    { JobyDarkBlue } { JobyLightestOrange } { JobyPink } }
+    { blue }     { \__joby_set_palette:nnnnnnn { JobyBlue }         { JobyDarkBlue } { JobyOrange } { JobyDarkBlue } { JobyDarkGray } { JobyLightestOrange } { JobyWhite } }
+    { orange }   { \__joby_set_palette:nnnnnnn { JobyBrightOrange } { JobyDarkBlue } { JobyBlue }   { JobyDarkBlue } { JobyLightestOrange } { JobyYellow } { JobyLightestOrange!35!JobyWhite } }
+    { green }    { \__joby_set_palette:nnnnnnn { JobyGreen }        { JobyDarkBlue } { JobyBlue }   { JobyDarkBlue } { JobyDarkGray } { JobyBlue } { JobyWhite } }
+    { navy }     { \__joby_set_palette:nnnnnnn { JobyDarkBlue }     { JobyBlue }     { JobyRed }    { JobyBlue } { JobyLightestOrange } { JobyPink } { JobyLightestOrange!35!JobyWhite } }
+    { osaka }    { \__joby_set_palette:nnnnnnn { JobyBlue }         { JobyDarkBlue } { JobyRed }    { JobyDarkBlue } { JobyLightestOrange } { JobyPink } { JobyLightestOrange!35!JobyWhite } }
   }
   {
     \msg_error:nnV { joby } { unknown-palette } \g_joby_palette_tl
   }
-% Pairs that include the peach get a peach-tinted background and block color.
-\clist_if_in:nVT { orange, navy, osaka } \g_joby_palette_tl
-  { \colorlet { colorPale } { JobyLightestOrange!35!JobyWhite } }
 \ExplSyntaxOff
 \gothamReloadColors
 \endinput

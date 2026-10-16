@@ -113,4 +113,50 @@
 	\par \vspace{-0.2cm}
 }
 
+% --- Appendix ----------------------------------------------------------------------------------------
+% After \appendix: sections are lettered (A, B, ...), left out of the outline, and every slide uses the
+% standin style (no title bar). Use \section for each appendix part, e.g. a bibliography, a list of
+% figures or a glossary.
+\newcommand{\jobytocappendix}{%
+	% Read from the .toc file: drop every entry after this marker (local to the outline being typeset).
+	\long\def\beamer@partintoc##1##2##3{}%
+	\long\def\beamer@sectionintoc##1##2##3##4##5{}%
+	\long\def\beamer@subsectionintoc##1##2##3##4##5##6{}%
+}
+\newcommand{\jobyappendixsetup}{%
+	\setcounter{section}{0}\setcounter{subsection}{0}%
+	\renewcommand{\thesection}{\Alph{section}}%
+	\def\insertsectionnumber{\@Alph\c@section}%
+	\addtocontents{toc}{\protect\jobytocappendix}%
+	\usebeamertemplate{standin}%
+}
+\AtBeginDocument{%
+	\let\jobyorigappendix\appendix
+	\renewcommand{\appendix}{%
+		\jobyappendixsetup
+		% Beamer starts the appendix with a "Part I: Appendix" page; the lettered sections are enough.
+		\let\jobyoldpart\part \let\part\@gobble
+		\jobyorigappendix
+		\let\part\jobyoldpart
+	}%
+}
+
+% --- Lists of figures and tables ---------------------------------------------------------------------
+% Beamer ignores \listoffigures and \listoftables. Here each caption is recorded with its slide number
+% and the lists print those, so they can be shown on a slide (best in the appendix).
+\newcommand{\jobylistentry}[4]{%
+	\noindent\hbox to \linewidth{\hbox to 5em{#1~#2\hss}#3\leaders\hbox{.}\hfill~#4}\par
+}
+% Beamer's \caption has already stepped the counter, so \the<type> is this caption's number.
+\let\jobyorigmakecaption\beamer@makecaption
+\long\def\beamer@makecaption#1#2{%
+	\addtocontents{\csname jobylistfile@#1\endcsname}{%
+		\protect\jobylistentry{\csname #1name\endcsname}{\csname the#1\endcsname}{#2}{\insertframenumber}}%
+	\jobyorigmakecaption{#1}{#2}%
+}
+\@namedef{jobylistfile@figure}{lof}
+\@namedef{jobylistfile@table}{lot}
+\renewcommand{\listoffigures}{\@starttoc{lof}}
+\renewcommand{\listoftables}{\@starttoc{lot}}
+
 \endinput

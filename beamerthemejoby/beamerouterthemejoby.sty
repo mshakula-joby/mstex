@@ -86,6 +86,9 @@
 	\vspace*{\gothamFooterHOffset}
 }
 
+% Standout slides have a colored background, so the footer title is reversed (the frame title already is).
+\addtobeamertemplate{standout}{\setbeamercolor{footline}{fg=JobyWhite}}{}
+
 % The institute is shown in the footer, so keep it off the title page.
 \defbeamertemplate{institute}{joby}{}
 \setbeamertemplate{institute}[joby]
@@ -98,9 +101,24 @@
 	\end{tikzpicture}%
 }
 \newenvironment{jobybarenv}{\setbeamertemplate{background}[joby bar]}{}
+% Beamer's [plain] frame option is redefined as the accent bar style: no title bar is needed, and the thin
+% accent bar runs along the top edge. Beamer's own plain behavior (which drops the footer) is kept under
+% the name [empty], which the title page uses so that it has no footer.
 \ExplSyntaxOn
-\__gotham_add_beamerframe_key:n { jobybar }
+\cs_new_eq:NN \jobyorigplainkey \KV@beamerframe@plain
+\define@key{beamerframe}{empty}[true]{ \jobyorigplainkey{#1} }
+\define@key{beamerframe}{plain}[true]{
+  \begin{jobybarenv}
+  \seq_put_left:Nn \l__gotham_frameoption_tmp_seq { \end{jobybarenv} }
+}
 \ExplSyntaxOff
+\def\maketitle{%
+	\ifbeamer@inframe
+		\titlepage
+	\else
+		\frame[empty, c, noframenumbering]{\titlepage}%
+	\fi
+}
 \addtobeamertemplate{part frame}{\setbeamertemplate{background}[joby bar]}{}
 \addtobeamertemplate{section frame}{\setbeamertemplate{background}[joby bar]}{}
 \addtobeamertemplate{subsection frame}{\setbeamertemplate{background}[joby bar]}{}
@@ -109,7 +127,7 @@
 % The proprietary notice slide, shown right after the title page. It has no title, so no header banner.
 % It names the institute (default Joby Aviation), or the author if the institute is empty.
 \newcommand{\jobyproprietaryslide}{%
-	\begin{frame}[jobyfront, jobybar, c]
+	\begin{frame}[jobyfront, plain, c]
 		\centering
 		\large
 		All information contained in these slides is \jobyorg\ Proprietary.\par

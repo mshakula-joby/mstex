@@ -1,0 +1,51 @@
+% Appendix with a bibliography, lists of figures and tables, and a glossary. The appendix is lettered
+% (A, B, ...), left out of the outline, and uses the standin frame style.
+\documentclass[aspectratio=169,10pt]{beamer}
+\usepackage[backend=biber, style=numeric]{biblatex}
+\addbibresource{joby-appendix.bib}
+\usepackage[style=list, nonumberlist]{glossaries}
+\makeglossaries
+\newglossaryentry{ral}{name={RAL}, description={Redundant Abstraction Layer}}
+\newglossaryentry{fcc}{name={FCC}, description={Flight Control Computer}}
+\usetheme{joby}
+\title{Appendix test}
+\author{Test Author}
+\begin{document}
+\maketitle
+
+\begin{frame}[toc]{Outline}
+	\tableofcontents
+\end{frame}
+
+\section{Main body}
+\begin{frame}{Content}
+	The \gls{ral} runs on the \gls{fcc}; see \cite{knuth1984,lamport1994}.
+	\begin{figure}
+		\rule{3cm}{1cm}
+		\caption{A first figure}
+	\end{figure}
+	\begin{table}
+		\begin{tabular}{cc}1 & 2\end{tabular}
+		\caption{A first table}
+	\end{table}
+\end{frame}
+
+\appendix
+\section{Bibliography}
+\begin{frame}[allowframebreaks]{References}
+	\printbibliography[heading=none]
+\end{frame}
+
+\section{Lists of Figures and Tables}
+\begin{frame}{List of figures}
+	\listoffigures
+\end{frame}
+\begin{frame}{List of tables}
+	\listoftables
+\end{frame}
+
+\section{Glossary}
+\begin{frame}[allowframebreaks]{Glossary}
+	\printglossaries
+\end{frame}
+\end{document}

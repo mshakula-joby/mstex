@@ -23,6 +23,18 @@
 %   hyperref        - \href and \url links use the palette's emphasis (alert) color.
 %   revision-number - the revision (\makerevision) is printed small in the title page's bottom right corner.
 %   listings        - code blocks use the palette's accent color as their background.
+%   glossaries      - a glossary prints without its own section heading (the frame title is the heading).
+%                   Number lists show physical PDF pages, so load glossaries with nonumberlist.
+%
+% Appendix (after \appendix):
+%   sections are lettered (A, B, ...), left out of the outline, and every slide uses the standin
+%   frame style. Beamer's "Part I: Appendix" page is dropped. Use one \section per part, with a frame
+%   that holds \printbibliography[heading=none] (biblatex; use allowframebreaks), \listoffigures or
+%   \listoftables, or \printglossaries.
+%
+% Lists of figures and tables:
+%   Beamer ignores \listoffigures and \listoftables; here they print each caption with the slide number
+%   it appears on (the same number as in the footer).
 %
 % Slides and numbering:
 %   Title page      - title, author and date, with the Joby mark in Joby Blue below. Not numbered.
@@ -41,12 +53,15 @@
 %
 % Frame styles, set with \begin{frame}[<style>]{...}:
 %   (default)       title bar in the palette color with the white Joby mark, then the footer.
-%   standout        full-bleed palette-color slide; small title at the top left, large white text.
+%   standout        full-bleed palette-color slide; small title at the top left, large text in the background color (Gotham's behavior).
 %   standin         no title bar; dark title at the top left on the normal background.
 %   toc             the styled outline, with slide numbers; counts as front matter.
 %   jobyfront       front matter: footer number is a lowercase roman numeral and is not counted.
-%   jobybar         thin accent-color bar along the top edge. Heading slides and the notice slide
-%                   have it already; it replaces a [watermark] since both use the background template.
+%   plain           Beamer's plain, redefined: a thin accent-color bar along the top edge, for slides
+%                   without a title bar; the footer stays. [empty] is Beamer's original plain: it
+%                   drops the footer (the title bar stays); the title page uses it. Heading slides and the notice
+%                   slide have the accent bar already; it replaces a [watermark] since both use the
+%                   background template.
 %   noframenumbering  the slide does not advance the slide count (Beamer).
 %   nofooter        removes the footer text but keeps the slide number.
 %   nofootline      removes the whole footer line.
@@ -57,7 +72,6 @@
 %   noBGC           removes the background canvas.
 %   nologo          removes Beamer's \logo; the mark in the title bar stays.
 %   c, t, b         vertical alignment of the content (Beamer).
-%   plain           Beamer's plain frame; it still shows Gotham's title bar and footer here.
 %   fragile, allowframebreaks, shrink   as in Beamer (use fragile for lstlisting).
 % Frame styles from Gotham not listed here (e.g. rotateFooter) work as documented there.
 
@@ -121,6 +135,11 @@
 
 \jobywithpackage{revision-number}{%
 	\renewcommand{\jobytitlerevision}{\makerevision}%
+}
+
+\jobywithpackage{glossaries}{%
+	% The frame title is the heading, so a glossary prints without its own section heading.
+	\renewcommand*{\glossarysection}[2][]{}%
 }
 
 \jobywithpackage{listings}{%
