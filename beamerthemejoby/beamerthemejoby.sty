@@ -39,6 +39,8 @@
 %   Beamer ignores \listoffigures and \listoftables; here they print each caption with the slide number
 %   it appears on (the same number as in the footer).
 %
+% Text: \emph is redefined as \alert (Joby Sans has no italic); \textbf, \texttt and \alert work as usual.
+%
 % Slides and numbering:
 %   Title page      - title, author and date, with the Joby mark in Joby Blue below. Not numbered.
 %   Notice slide    - with the proprietary option, a centered notice right after the title page.
@@ -111,6 +113,9 @@
 \RequirePackage{beamerfontthemejoby}
 \RequirePackage{beamerinnerthemejoby}
 \RequirePackage{beamerouterthemejoby}
+
+% Joby Sans has no italic, so \emph (which would fake one) is the same as \alert: the palette's emphasis color.
+\DeclareRobustCommand{\emph}[1]{\alert{#1}}
 
 % Joby Sans has deeper descenders than Fira, which Gotham's tiny footline depth clips at the page edge.
 \setlength{\gothamFootlineDepth}{1.2ex}

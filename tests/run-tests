@@ -131,6 +131,19 @@ r, g, b = Image.open(sys.argv[1]).convert("RGB").getpixel((10, 3))
 sys.exit(1 if b - r > 80 else 0)  # blue title bar
 PY
 			;;
+		joby-emph)
+			expect_text "emphasized" "$name"
+			# \emph and \alert use the same color: compare the two words' pixels at low resolution.
+			pdftoppm -r 60 -f 1 -l 1 -png "build/$name.pdf" "build/$name-img"
+			python3 -I - "build/$name-img"-*.png <<'PY' && pass "$name \\emph is colored like \\alert" || fail "$name \\emph is colored like \\alert"
+import sys
+from PIL import Image
+im = Image.open(sys.argv[1]).convert("RGB")
+w, h = im.size
+orange = [p for p in im.crop((0, h // 4, w, 3 * h // 4)).getdata() if p[0] > 200 and 60 < p[1] < 130 and p[2] < 70]
+sys.exit(0 if len(orange) > 40 else 1)  # emphasis color (orange on the default palette)
+PY
+			;;
 		joby-institute-empty)
 			expect_text "is Test Author Proprietary." "$name"
 			expect_text "authorization from Test Author." "$name"
