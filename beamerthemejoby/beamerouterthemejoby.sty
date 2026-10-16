@@ -59,9 +59,15 @@
 	\end{tikzpicture}%
 }
 
-% Footer: copyright, institute and date (MM/DD/YYYY) at the bottom left, the short title centered on the
+% Footer: copyright, institute and date (MM/DD/YYYY) at the bottom left (very small and faint), the short title centered on the
 % page, and (with the proprietary option) the proprietary notice at the bottom right, before the slide
 % number that Gotham's footline adds.
+% The organization named in the footer and the proprietary notice: the institute, or the author if the
+% document leaves the institute empty (\institute{}).
+\RequirePackage{etoolbox}
+\newcommand{\jobyorg}{\expandafter\ifblank\expandafter{\insertinstitute}{\insertauthor}{\insertinstitute}}
+\newcommand{\jobyorgupper}{\expandafter\ifblank\expandafter{\insertinstitute}{\uppercase\expandafter{\insertauthor}}{\uppercase\expandafter{\insertinstitute}}}
+
 \newcommand{\jobyfooterdate}{\two@digits{\month}/\two@digits{\day}/\the\year}
 \newcommand{\jobyproprietaryfooter}{}
 \ExplSyntaxOn
@@ -74,9 +80,9 @@
 	% Zero-width boxes, so the title is centered on the page whatever the left and right texts are.
 	\hbox to 0pt{\kern\dimexpr\textwidth/2-3ex-\gothamLeftFooterPadding\relax
 		\hbox to 0pt{\hss\insertshorttitle\gotham@strut\hss}\hss}%
-	{\scriptsize\textcopyright~\uppercase\expandafter{\insertinstitute}~\jobyfooterdate}%
+	{\fontsize{3.5pt}{4pt}\selectfont\color{JobyDarkGray}\textcopyright~\jobyorgupper~\jobyfooterdate}%
 	\hfill
-	{\tiny\jobyproprietaryfooter}%
+	{\fontsize{3.5pt}{4pt}\selectfont\color{JobyDarkGray}\jobyproprietaryfooter}%
 	\vspace*{\gothamFooterHOffset}
 }
 
@@ -84,15 +90,31 @@
 \defbeamertemplate{institute}{joby}{}
 \setbeamertemplate{institute}[joby]
 
+% A thin bar in the accent color along the top of the "plain" slides, the ones without a title bar:
+% the heading slides (part, section, subsection, subsubsection) and the proprietary notice slide.
+\defbeamertemplate{background}{joby bar}{%
+	\begin{tikzpicture}[remember picture, overlay]
+		\fill[colorAccent] (current page.north west) rectangle ([yshift=-1.2mm]current page.north east);
+	\end{tikzpicture}%
+}
+\newenvironment{jobybarenv}{\setbeamertemplate{background}[joby bar]}{}
+\ExplSyntaxOn
+\__gotham_add_beamerframe_key:n { jobybar }
+\ExplSyntaxOff
+\addtobeamertemplate{part frame}{\setbeamertemplate{background}[joby bar]}{}
+\addtobeamertemplate{section frame}{\setbeamertemplate{background}[joby bar]}{}
+\addtobeamertemplate{subsection frame}{\setbeamertemplate{background}[joby bar]}{}
+\addtobeamertemplate{subsubsection frame}{\setbeamertemplate{background}[joby bar]}{}
+
 % The proprietary notice slide, shown right after the title page. It has no title, so no header banner.
-% It names the institute (\institute, default Joby Aviation).
+% It names the institute (default Joby Aviation), or the author if the institute is empty.
 \newcommand{\jobyproprietaryslide}{%
-	\begin{frame}[jobyfront, c]
+	\begin{frame}[jobyfront, jobybar, c]
 		\centering
 		\large
-		All information contained in these slides is \insertinstitute\ Proprietary.\par
+		All information contained in these slides is \jobyorg\ Proprietary.\par
 		\vspace{\baselineskip}
-		Do not distribute without prior authorization from \insertinstitute.\par
+		Do not distribute without prior authorization from \jobyorg.\par
 	\end{frame}%
 }
 \ExplSyntaxOn

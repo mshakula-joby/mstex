@@ -87,6 +87,11 @@ for f in *.tex; do
 			expect_text "authorization from Joby Aviation." "$name"
 			expect_text "PROPRIETARY INFORMATION. DO NOT DISTRIBUTE." "$name"
 			expect_text "JOBY AVIATION" "$name" ;;
+		joby-institute-empty)
+			expect_text "is Test Author Proprietary." "$name"
+			expect_text "authorization from Test Author." "$name"
+			expect_text "TEST AUTHOR" "$name"
+			expect_no_text "JOBY AVIATION" "$name" ;;
 		joby-no-options)
 			expect_no_text "git:" "$name"
 			expect_text "JOBY AVIATION" "$name"

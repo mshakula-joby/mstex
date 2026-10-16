@@ -15,13 +15,51 @@
 %
 % The institute defaults to \institute{Joby Aviation}; set your own \institute to override it.
 %
-% This directory must be on TEXINPUTS (the project's .latexmkrc does this). Fonts are loaded from
-% fonts/ and the logo source is kept as jobymark.svg here. Needs LuaLaTeX or XeLaTeX.
+% This directory must be on TEXINPUTS (the project's .latexmkrc does this). Joby Sans is loaded from
+% fonts/ and the logo source is kept as jobymark.svg here. Needs LuaLaTeX; other engines fall back to
+% Gotham's fonts with a warning.
 %
 % Package integration (applied only if the package is loaded, whether before or after the theme):
-%   hyperref  - \href and \url links use the palette's emphasis (alert) color.
+%   hyperref        - \href and \url links use the palette's emphasis (alert) color.
 %   revision-number - the revision (\makerevision) is printed small in the title page's bottom right corner.
-%   listings  - code blocks use the palette's accent color as their background.
+%   listings        - code blocks use the palette's accent color as their background.
+%
+% Slides and numbering:
+%   Title page      - title, author and date, with the Joby mark in Joby Blue below. Not numbered.
+%   Notice slide    - with the proprietary option, a centered notice right after the title page.
+%   Outline         - [toc] frames list sections with the number of each heading slide.
+%   Heading slides  - section, subsection (part, subsubsection) pages are numbered like any other slide.
+%   Front matter    - the notice slide and the outline are numbered i, ii, ... and not counted, so the
+%                     arabic numbers start at 1 on the first heading slide.
+%
+% Footer (every slide with a footer):
+%   left   - copyright, the institute in capitals (the author if \institute is empty) and the compile
+%            date as MM/DD/YYYY; very small (3.5pt) and faint.
+%   middle - the short title, centered on the page.
+%   right  - with the proprietary option, "PROPRIETARY INFORMATION. DO NOT DISTRIBUTE." (very small and
+%            faint), then the slide number.
+%
+% Frame styles, set with \begin{frame}[<style>]{...}:
+%   (default)       title bar in the palette color with the white Joby mark, then the footer.
+%   standout        full-bleed palette-color slide; small title at the top left, large white text.
+%   standin         no title bar; dark title at the top left on the normal background.
+%   toc             the styled outline, with slide numbers; counts as front matter.
+%   jobyfront       front matter: footer number is a lowercase roman numeral and is not counted.
+%   jobybar         thin accent-color bar along the top edge. Heading slides and the notice slide
+%                   have it already; it replaces a [watermark] since both use the background template.
+%   noframenumbering  the slide does not advance the slide count (Beamer).
+%   nofooter        removes the footer text but keeps the slide number.
+%   nofootline      removes the whole footer line.
+%   nopagenumber    removes the slide number.
+%   edging, noedging  Gotham's side edgings; empty unless you define \gothamLeftFiligrane or
+%                   \gothamRightFiligrane.
+%   watermark, nowatermark  Gotham's background watermark (define the template, see the Gotham manual).
+%   noBGC           removes the background canvas.
+%   nologo          removes Beamer's \logo; the mark in the title bar stays.
+%   c, t, b         vertical alignment of the content (Beamer).
+%   plain           Beamer's plain frame; it still shows Gotham's title bar and footer here.
+%   fragile, allowframebreaks, shrink   as in Beamer (use fragile for lstlisting).
+% Frame styles from Gotham not listed here (e.g. rotateFooter) work as documented there.
 
 \NeedsTeXFormat{LaTeX2e}
 \ProvidesPackage{beamerthemejoby}[2026/10/16 Joby Gotham-based Beamer theme]

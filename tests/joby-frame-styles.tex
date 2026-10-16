@@ -1,0 +1,24 @@
+% One slide for each frame style available in the Joby theme (Beamer's, Gotham's and Joby's own).
+\documentclass[aspectratio=169,10pt]{beamer}
+\usetheme[palette=blue,proprietary]{joby}
+\title{Frame styles}
+\author{Test Author}
+\begin{document}
+\maketitle
+\begin{frame}{Default}Normal slide with the title bar, mark and footer.\end{frame}
+\begin{frame}[plain]{Plain}Beamer's plain: no title bar, no footer.\end{frame}
+\begin{frame}[standout]{Standout}Full-color slide.\end{frame}
+\begin{frame}[standin]{Standin}Reversed colors.\end{frame}
+\begin{frame}[edging]{Edging}Side edgings.\end{frame}
+\begin{frame}[noedging]{No edging}Edgings off.\end{frame}
+\begin{frame}[nofooter]{No footer}Footer text off.\end{frame}
+\begin{frame}[nofootline]{No footline}Footline off.\end{frame}
+\begin{frame}[nopagenumber]{No page number}Page number off.\end{frame}
+\begin{frame}[nologo]{No logo}Logo off.\end{frame}
+\begin{frame}[noBGC]{No background canvas}Background canvas off.\end{frame}
+\begin{frame}[noframenumbering]{No frame numbering}Not counted.\end{frame}
+\begin{frame}[t]{Top aligned}Content at the top.\end{frame}
+\begin{frame}[c]{Centered}Content centered.\end{frame}
+\begin{frame}[jobyfront]{Front matter}Roman numeral, not counted.\end{frame}
+\begin{frame}[jobybar,c]Joby bar: accent bar at the top, no title.\end{frame}
+\end{document}
