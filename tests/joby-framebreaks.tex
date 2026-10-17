@@ -1,0 +1,21 @@
+% allowframebreaks: "(i)", "(ii)" appear only on frames that are really broken into several slides.
+\documentclass[aspectratio=169,10pt]{beamer}
+\usetheme{joby}
+\title{Frame breaks}
+\author{Test Author}
+\begin{document}
+\begin{frame}[allowframebreaks]{SHORT-FRAME}
+	Only a little content here, so the frame is not broken.
+\end{frame}
+\begin{frame}[allowframebreaks]{LONG-FRAME}
+	\begin{itemize}
+		\item Line 1 \item Line 2 \item Line 3 \item Line 4 \item Line 5 \item Line 6 \item Line 7 \item Line 8
+		\item Line 9 \item Line 10 \item Line 11 \item Line 12 \item Line 13 \item Line 14 \item Line 15 \item Line 16
+		\item Line 17 \item Line 18 \item Line 19 \item Line 20 \item Line 21 \item Line 22 \item Line 23 \item Line 24
+		\item Line 25 \item Line 26 \item Line 27 \item Line 28 \item Line 29 \item Line 30 \item Line 31 \item Line 32
+	\end{itemize}
+\end{frame}
+\begin{frame}{PLAIN-FRAME}
+	No frame breaks at all.
+\end{frame}
+\end{document}

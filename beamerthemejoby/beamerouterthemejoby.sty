@@ -89,6 +89,16 @@
 % Standout slides have a colored background, so the footer title is reversed (the frame title already is).
 \addtobeamertemplate{standout}{\setbeamercolor{footline}{fg=JobyWhite}}{}
 
+% allowframebreaks: the continuation numbering "(i)", "(ii)" is only shown when the frame really is broken
+% into more than one slide (Beamer records the first and last slide of every frame in the .nav file).
+\expandafter\let\csname beamer@@tmpop@frametitle continuation@default/gotham\endcsname\@undefined
+\defbeamertemplate{frametitle continuation}{default/gotham}{%
+	\ifnum\numexpr\beamer@endpageofframe+1-\beamer@startpageofframe\relax>1
+		\usebeamerfont{frametitle}{(\romannumeral \insertcontinuationcount)}%
+	\fi
+}
+\setbeamertemplate{frametitle continuation}[default/gotham]
+
 % The institute is shown in the footer, so keep it off the title page.
 \defbeamertemplate{institute}{joby}{}
 \setbeamertemplate{institute}[joby]
