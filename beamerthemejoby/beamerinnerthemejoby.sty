@@ -145,7 +145,19 @@
 	{}
 	{\PackageWarning{beamerinnerthemejoby}{Could not patch \string\beamer@@@@frame; appendix frames keep their own style}}
 % Gotham's standout style does not set the frame title colors that the default standin changed.
-\renewenvironment{standoutenv}{\usebeamertemplate{standout}\jobyrestoreframetitlecolor}{}
+% In the dark variants Gotham's standout text (the title of a standout frame without a body) takes the
+% off-black background color; it is Joby White instead.
+\ExplSyntaxOn
+\NewDocumentCommand{\jobyrestorestandouttext}{}
+  {
+    \bool_if:NT \g_joby_dark_bool
+      {
+        \setbeamercolor { primary~palette } { fg = JobyWhite }
+        \usebeamercolor [ fg ] { primary~palette }
+      }
+  }
+\ExplSyntaxOff
+\renewenvironment{standoutenv}{\usebeamertemplate{standout}\jobyrestoreframetitlecolor\jobyrestorestandouttext}{}
 \newcommand{\jobyappendixsetup}{%
 	\setcounter{section}{0}\setcounter{subsection}{0}%
 	\renewcommand{\thesection}{\Alph{section}}%

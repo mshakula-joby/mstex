@@ -93,6 +93,32 @@ r, g, b = Image.open(sys.argv[2]).convert("RGB").getpixel((3, 30))
 is_dark = (r + g + b) / 3 < 100
 sys.exit(0 if is_dark == bool(sys.argv[1]) else 1)
 PY
+			# A standout frame without a body ("Questions?", the last slide) has light title text, also in the dark variants.
+			if [ -n "$dark" ]; then
+				last=$(pdfinfo "build/$name.pdf" | awk '/Pages/{print $2}')
+				pdftoppm -r 40 -f $last -l $last -png "build/$name.pdf" "build/$name-last"
+				python3 -I - "build/$name-last"-*.png <<'PY2' && pass "$name standout title without a body is light" || fail "$name standout title without a body is light"
+import sys
+from PIL import Image
+im = Image.open(sys.argv[1]).convert("RGB")
+w, h = im.size
+light = [p for p in im.crop((0, 0, w, int(h * 0.85))).getdata() if sum(p) > 650]
+sys.exit(0 if len(light) > 20 else 1)
+PY2
+			fi
+			;;
+		joby-standout-dark)
+			expect_text "STANDOUT-NO-BODY" "$name"
+			pdftoppm -r 40 -f 1 -l 1 -png "build/$name.pdf" "build/$name-img"
+			python3 -I - "build/$name-img"-*.png <<'PY' && pass "$name title is light on the dark standout slide" || fail "$name title is light on the dark standout slide"
+import sys
+from PIL import Image
+im = Image.open(sys.argv[1]).convert("RGB")
+w, h = im.size
+light = [p for p in im.crop((0, 0, w, int(h * 0.85))).getdata() if sum(p) > 650]
+dark_text = [p for p in im.crop((0, 0, w, int(h * 0.85))).getdata() if sum(p) < 150]
+sys.exit(0 if len(light) > 20 and len(dark_text) < 20 else 1)
+PY
 			;;
 		joby-toc)
 			p2=$(pdftotext -f 2 -l 2 "build/$name.pdf" -)
