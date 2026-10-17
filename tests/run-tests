@@ -144,6 +144,79 @@ orange = [p for p in im.crop((0, h // 4, w, 3 * h // 4)).getdata() if p[0] > 200
 sys.exit(0 if len(orange) > 40 else 1)  # emphasis color (orange on the default palette)
 PY
 			;;
+		joby-images)
+			expect_text "CAPTION-ONE" "$name"; expect_text "CAPTION-TWO" "$name"; expect_text "TEXT-BESIDE" "$name"; expect_text "LABEL-RIGHT" "$name"
+			expect_text "Figure 1:" "$name"
+			pdftotext -bbox "build/$name.pdf" "build/$name.bbox.html"
+			python3 -I - "build/$name.bbox.html" "build/$name.pdf" <<'PY' && pass "$name text and captions are ordered, on the page and clear of the footer" || fail "$name text and captions are ordered, on the page and clear of the footer"
+import re, sys
+html = open(sys.argv[1]).read()
+pages = html.split("<page ")[1:]
+def words(page):
+    h = float(re.search(r'height="([\d.]+)"', page).group(1))
+    return h, [(w, float(y1), float(y2)) for y1, y2, w in re.findall(r'yMin="([\d.]+)" xMax="[\d.]+" yMax="([\d.]+)">([^<]*)<', page)]
+def find(page_words, token):
+    return [(y1, y2) for w, y1, y2 in page_words if token in w][0]
+h, p1 = words(pages[0])
+above, cap, below = find(p1, "TEXT-ABOVE"), find(p1, "CAPTION-ONE"), find(p1, "TEXT-BELOW")
+assert above[0] < cap[0] < below[0], "order on slide 1"
+for page in pages:
+    h, ws = words(page)
+    body = [w for w in ws if not any(t in w[0] for t in ("JOBY", "AVIATION", "Images", "10/16", "©")) and w[1] < 0.9 * h]
+    assert body, "no body text"
+    # nothing of the body (captions and text) may reach into the footer band
+    assert max(w[2] for w in body) < 0.93 * h, "body reaches the footer"
+PY
+			;;
+		joby-cleveref)
+			expect_text "Figure 1" "$name"
+			pdftotext -f 2 -l 2 -bbox "build/$name.pdf" "build/$name.bbox.html"
+			python3 -I - "build/$name.bbox.html" "build/$name.pdf" <<'PY' && pass "$name \\cref and \\Cref links cover the whole name" || fail "$name \\cref and \\Cref links cover the whole name"
+import re, sys
+html = open(sys.argv[1]).read()
+H = float(re.search(r'height="([\d.]+)"', html).group(1))
+words = [(w, float(a), float(b), float(c), float(d)) for a, b, c, d, w in re.findall(r'xMin="([\d.]+)" yMin="([\d.]+)" xMax="([\d.]+)" yMax="([\d.]+)">([^<]*)<', html)]
+pdf = open(sys.argv[2], "rb").read().decode("latin1")
+links = []
+for m in re.finditer(r"/Subtype\s*/Link", pdf):
+    blk = pdf[max(0, m.start() - 400): m.start() + 400]
+    rect = re.search(r"/Rect\s*\[([^\]]*)\]", blk[blk.rfind("<<", 0, 400):]) or re.search(r"/Rect\s*\[([^\]]*)\]", blk)
+    dest = re.search(r"/D\s*\(([^)]*)\)", pdf[m.start(): m.start() + 400])
+    if rect and dest and dest.group(1) == "fig:a":
+        x1, y1, x2, y2 = map(float, rect.group(1).split())
+        links.append((x1, H - y2, x2, H - y1))
+def covers(name_word, number_word_index):
+    i = [k for k, w in enumerate(words) if w[0] == name_word][0]
+    first, last = words[i], words[i + 1]
+    return any(l[0] <= first[1] + 1 and l[2] >= last[1] + 3 for l in links)
+assert len(links) >= 2, "expected links for \\cref and \\Cref, found %d" % len(links)
+assert covers("fig.", 1), "\\cref link does not cover 'fig. 1'"
+assert covers("Figure", 1), "\\Cref link does not cover 'Figure 1'"
+PY
+			;;
+		joby-math)
+			expect_text "Theorem" "$name"; expect_text "Proof." "$name"; expect_text "Definition" "$name"; expect_text "Cauchy" "$name"
+			grep -q "^Overfull" "build/$name.log" && fail "$name has no overfull boxes" || pass "$name has no overfull boxes"
+			pdffonts "build/$name.pdf" | grep -q "CMMI\|CMSY\|CMEX" && pass "$name uses math fonts" || fail "$name uses math fonts"
+			pdftotext -bbox "build/$name.pdf" "build/$name.bbox.html"
+			python3 -I - "build/$name.bbox.html" <<'PY' && pass "$name formulas stay inside the slide and clear of the footer" || fail "$name formulas stay inside the slide and clear of the footer"
+import re, sys
+pages = open(sys.argv[1]).read().split("<page ")[1:]
+for page in pages:
+    w = float(re.search(r'width="([\d.]+)"', page).group(1))
+    h = float(re.search(r'height="([\d.]+)"', page).group(1))
+    for x1, y1, x2, y2, tok in re.findall(r'xMin="([\d.]+)" yMin="([\d.]+)" xMax="([\d.]+)" yMax="([\d.]+)">([^<]*)<', page):
+        x1, y1, x2, y2 = map(float, (x1, y1, x2, y2))
+        assert 0 <= x1 and x2 <= w, "word %r leaves the slide" % tok
+        footer = any(t in tok for t in ("JOBY", "AVIATION", "Math", "10/16", "©")) or y1 > 0.9 * h
+        assert footer or y2 < 0.93 * h, "word %r reaches the footer" % tok
+PY
+			;;
+		joby-fonts)
+			fonts=$(pdffonts "build/$name.pdf")
+			for f in JobySansText-400 JobySansText-600 FiraSans-Italic FiraSans-SemiBoldItalic FiraSans-Regular FiraSans-SemiBold; do
+				grep -q "$f" <<<"$fonts" && pass "$name uses $f" || fail "$name uses $f"
+			done ;;
 		joby-institute-empty)
 			expect_text "is Test Author Proprietary." "$name"
 			expect_text "authorization from Test Author." "$name"

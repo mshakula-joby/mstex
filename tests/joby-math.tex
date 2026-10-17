@@ -1,0 +1,77 @@
+% Complicated formulas: display math, matrices, math fonts, the physics package and theorem blocks.
+\documentclass[aspectratio=169,10pt]{beamer}
+\usepackage{amsmath,amssymb,bm}
+\usepackage{physics}
+\usetheme{joby}
+\title{Math}
+\author{Test Author}
+\begin{document}
+
+\begin{frame}{Display equations}
+	\begin{align}
+		\int_{0}^{\infty} \frac{\sin x}{x}\,\dd x &= \frac{\pi}{2}, &
+		\sum_{n=1}^{\infty} \frac{1}{n^{2}} &= \frac{\pi^{2}}{6}, \\
+		\mathbf{x}_{k+1} &= \mathbf{x}_k + \Delta t\,\Bigl(\mathbf{A}\mathbf{x}_k + \mathbf{B}\mathbf{u}_k\Bigr),
+		& \mathbf{P} &= \prod_{i=1}^{N} \left(\mathbf{I} - \mathbf{K}_i \mathbf{H}_i\right).
+	\end{align}
+	\[
+		f(x) = \begin{cases}
+			\dfrac{x^{2}-1}{x-1}, & x \neq 1, \\[1ex]
+			2, & x = 1.
+		\end{cases}
+	\]
+\end{frame}
+
+\begin{frame}{Matrices and fractions}
+	\[
+		\mathbf{A} = \begin{pmatrix} a_{11} & a_{12} & \cdots & a_{1n} \\ a_{21} & a_{22} & \cdots & a_{2n} \\ \vdots & \vdots & \ddots & \vdots \\ a_{m1} & a_{m2} & \cdots & a_{mn} \end{pmatrix},
+		\qquad
+		\det\begin{bmatrix} \cos\theta & -\sin\theta \\ \sin\theta & \cos\theta \end{bmatrix} = 1.
+	\]
+	\[
+		x = \cfrac{1}{1+\cfrac{1}{1+\cfrac{1}{1+\cfrac{1}{1+\cdots}}}}
+		\quad\text{and}\quad
+		\sqrt{1+\sqrt{1+\sqrt{1+\sqrt{1+x}}}}
+	\]
+\end{frame}
+
+\begin{frame}{The physics package}
+	\[
+		\pdv{\psi}{t} = -\frac{\hbar^2}{2m}\laplacian\psi + V\psi,
+		\qquad
+		\ev{\hat{H}}{\psi} = \int \psi^{*}\hat{H}\psi\,\dd^{3}x,
+		\qquad
+		\curl{\vb{B}} = \mu_0\vb{J} + \mu_0\epsilon_0\pdv{\vb{E}}{t}.
+	\]
+	\[
+		\dv{}{t}\qty(\frac{\partial L}{\partial \dot{q}}) - \frac{\partial L}{\partial q} = 0,
+		\qquad
+		\comm{\hat{x}}{\hat{p}} = i\hbar,
+		\qquad
+		\bra{a}\ket{b} = \delta_{ab}.
+	\]
+\end{frame}
+
+\begin{frame}{Math alphabets and inline math}
+	Blackboard $\mathbb{R}, \mathbb{C}$, calligraphic $\mathcal{L}, \mathcal{F}$, fraktur $\mathfrak{g}$,
+	bold $\mathbf{v}$ and $\boldsymbol{\omega}$, roman $\mathrm{d}x$ and \alert{$E = mc^{2}$} in the emphasis color,
+	with \textbf{bold text and $\bm{\alpha}$} and a limit $\lim_{n\to\infty}\left(1+\tfrac{1}{n}\right)^{n} = e$ inline.
+	\[
+		\operatorname{argmax}_{\theta \in \Theta} \; \mathbb{E}\!\left[\log p(x \mid \theta)\right]
+		\;\; \forall\, \epsilon > 0 \;\; \exists\, \delta > 0 : |x - a| < \delta \Rightarrow |f(x) - f(a)| < \epsilon
+	\]
+\end{frame}
+
+\begin{frame}{Theorem blocks}
+	\begin{theorem}[Cauchy--Schwarz]
+		For all vectors $u, v$ in an inner product space, $|\langle u, v\rangle|^{2} \le \langle u, u\rangle\,\langle v, v\rangle$.
+	\end{theorem}
+	\begin{proof}
+		Expand $\|u - tv\|^{2} \ge 0$ and choose $t = \langle u, v\rangle / \langle v, v\rangle$.
+	\end{proof}
+	\begin{definition}
+		A \alert{norm} satisfies $\|x\| = 0 \iff x = 0$.
+	\end{definition}
+\end{frame}
+
+\end{document}

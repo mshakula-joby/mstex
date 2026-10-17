@@ -1,0 +1,19 @@
+% \cref links work with the theme (Beamer disables them otherwise) and cover the whole name, "Figure 1".
+\documentclass[aspectratio=169,10pt]{beamer}
+\directlua{pdf.setcompresslevel(0) pdf.setobjcompresslevel(0)}% readable link annotations for the check
+\usetheme{joby}
+\usepackage{cleveref}
+\title{Cleveref}
+\author{Test Author}
+\begin{document}
+\begin{frame}{One}
+	\begin{figure}
+		\rule{2cm}{1cm}
+		\caption{A figure}
+		\label{fig:a}
+	\end{figure}
+\end{frame}
+\begin{frame}{Two}
+	See \cref{fig:a} and \Cref{fig:a}.
+\end{frame}
+\end{document}

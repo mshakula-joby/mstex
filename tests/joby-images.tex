@@ -1,0 +1,54 @@
+% Images with captions and text around them.
+\documentclass[aspectratio=169,10pt]{beamer}
+\usepackage{graphicx}
+\usepackage{cleveref}
+\usetheme{joby}
+\title{Images}
+\author{Test Author}
+\begin{document}
+
+\begin{frame}{Image with text above and below}
+	TEXT-ABOVE the figure.
+	\begin{figure}
+		\includegraphics[height=3cm]{example-image-a}
+		\caption{CAPTION-ONE for the first image}
+		\label{fig:one}
+	\end{figure}
+	TEXT-BELOW the figure.
+\end{frame}
+
+\begin{frame}{Image beside text}
+	\begin{columns}[T]
+		\begin{column}{0.4\textwidth}
+			\begin{figure}
+				\includegraphics[width=\textwidth]{example-image-b}
+				\caption{CAPTION-TWO beside text}
+			\end{figure}
+		\end{column}
+		\begin{column}{0.55\textwidth}
+			TEXT-BESIDE the image.
+			\begin{itemize}
+				\item First point, referring to \cref{fig:one}.
+				\item Second point.
+			\end{itemize}
+		\end{column}
+	\end{columns}
+\end{frame}
+
+\begin{frame}{Two images side by side}
+	\begin{columns}[T]
+		\begin{column}{0.48\textwidth}
+			\centering
+			\includegraphics[height=2.4cm]{example-image-a}\\
+			\small LABEL-LEFT under the left image
+		\end{column}
+		\begin{column}{0.48\textwidth}
+			\centering
+			\includegraphics[height=2.4cm]{example-image-c}\\
+			\small LABEL-RIGHT under the right image
+		\end{column}
+	\end{columns}
+	TEXT-AFTER-PAIR the images.
+\end{frame}
+
+\end{document}

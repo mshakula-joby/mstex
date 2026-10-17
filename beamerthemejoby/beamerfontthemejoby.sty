@@ -1,6 +1,7 @@
 % beamerfontthemejoby.sty
 %
-% Joby Sans (from the fonts/ directory next to this file) and a monospace font.
+% Joby Sans (from the fonts/ directory next to this file; it has no italic or small caps, so Fira Sans
+% provides those) and a monospace font.
 % Expects LuaLaTeX or XeLaTeX. Monospace uses the first installed font from the list below;
 % Latin Modern Mono is the generic fallback. If Joby Sans is missing, Gotham's fonts are kept.
 
@@ -26,18 +27,39 @@
 \msg_new:nnn { joby } { joby-sans-missing }
   { Joby~Sans~fonts~not~found~in~'#1';~using~Gotham~defaults. }
 
+% Joby Sans (a rebranded Universal Sans) has no italic and no small caps. Fira Sans, which is also
+% Gotham's font, stands in for those two shapes when it is installed; otherwise italics are the regular
+% font slanted, and small caps are not available.
 \cs_new_protected:Nn \__joby_set_sans_fonts:
   {
-    \setsansfont
-      [
-        Path = \c__joby_font_path_tl ,
-        BoldFont = JobySans-Text-600.ttf ,
-        ItalicFont = JobySans-Text-400.ttf ,
-        BoldItalicFont = JobySans-Text-600.ttf ,
-        ItalicFeatures = { FakeSlant = 0.2 } ,
-        BoldItalicFeatures = { FakeSlant = 0.2 } ,
-      ]
-      { JobySans-Text-400.ttf }
+    \fontspec_font_if_exist:nTF { FiraSans-Italic.otf }
+      {
+        \setsansfont
+          [
+            Path = \c__joby_font_path_tl ,
+            BoldFont = JobySans-Text-600.ttf ,
+            ItalicFont = FiraSans-Italic.otf ,
+            BoldItalicFont = FiraSans-SemiBoldItalic.otf ,
+            ItalicFeatures = { Path = } ,
+            BoldItalicFeatures = { Path = } ,
+          ]
+          { JobySans-Text-400.ttf }
+        \newfontfamily \jobysmallcapsfont [ BoldFont = { Fira~Sans~SemiBold } , Letters = SmallCaps ] { Fira~Sans }
+        % LaTeX resets \scshape at the start of the document, so redefine it then.
+        \AtBeginDocument { \DeclareRobustCommand \scshape { \not@math@alphabet \scshape \relax \jobysmallcapsfont } }
+      }
+      {
+        \setsansfont
+          [
+            Path = \c__joby_font_path_tl ,
+            BoldFont = JobySans-Text-600.ttf ,
+            ItalicFont = JobySans-Text-400.ttf ,
+            BoldItalicFont = JobySans-Text-600.ttf ,
+            ItalicFeatures = { FakeSlant = 0.2 } ,
+            BoldItalicFeatures = { FakeSlant = 0.2 } ,
+          ]
+          { JobySans-Text-400.ttf }
+      }
     \newfontfamily \jobydisplayfont
       [
         Path = \c__joby_font_path_tl ,

@@ -25,6 +25,8 @@
 %   hyperref        - \href and \url links use the palette's emphasis (alert) color.
 %   revision-number - the revision (\makerevision) is printed small in the title page's bottom right corner.
 %   listings        - code blocks use the palette's accent color as their background.
+%   cleveref        - \cref links work (Beamer disables them) and cover the whole name, "Figure 1".
+%                   Load cleveref after the theme.
 %   glossaries      - a glossary prints without its own section heading (the frame title is the heading).
 %                   Number lists show physical PDF pages, so load glossaries with nonumberlist.
 %
@@ -40,6 +42,8 @@
 %   it appears on (the same number as in the footer).
 %
 % Text: \emph is redefined as \alert (Joby Sans has no italic); \textbf, \texttt and \alert work as usual.
+% Joby Sans is a rebranded Universal Sans without italics or small caps, so Fira Sans (Gotham's font)
+% supplies \textit and \scshape/\textsc when it is installed; without it italics are slanted Joby Sans.
 %
 % Slides and numbering:
 %   Title page      - title, author and date, with the Joby mark in Joby Blue below. Not numbered.
@@ -163,6 +167,24 @@
 	% The frame title is the heading, so a glossary prints without its own section heading.
 	\renewcommand*{\glossarysection}[2][]{}%
 }
+
+% cleveref: Beamer loads hyperref with implicit=false, which makes cleveref switch its hyperref support
+% off, so \cref produces no links at all. Load cleveref after the theme and the links work (hide the
+% option from cleveref while it loads), with the whole name in the link ("Figure 1", not just "1").
+\makeatletter
+\@ifpackageloaded{cleveref}{%
+	\PackageWarning{beamerthemejoby}{cleveref was loaded before the theme, so its links stay disabled; load cleveref after \string\usetheme}%
+}{%
+	\PassOptionsToPackage{nameinlink}{cleveref}%
+	\AddToHook{package/cleveref/before}{%
+		\expandafter\let\expandafter\jobysavedopthyperref\csname opt@hyperref.sty\endcsname
+		\expandafter\def\csname opt@hyperref.sty\endcsname{}%
+	}%
+	\AddToHook{package/cleveref/after}{%
+		\expandafter\let\csname opt@hyperref.sty\endcsname\jobysavedopthyperref
+	}%
+}
+\makeatother
 
 \jobywithpackage{listings}{%
 	\lstset{
