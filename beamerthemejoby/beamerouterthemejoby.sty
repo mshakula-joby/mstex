@@ -40,8 +40,15 @@
 	}%
 }
 
-% White mark at the right end of every frame title bar (Gotham's logo slot).
-\renewcommand{\gothamInstituteLogoSquare}[1][3.2ex]{\raisebox{0.2ex}{\jobymark[#1]{JobyWhite}}}
+% White mark at the right end of every frame title bar (Gotham's logo slot). Standin slides (including the
+% appendix default) have no title bar, so there the mark would be a white mark on the slide background:
+% invisible on the light variants, and visible on the dark ones. It is left out on standin slides.
+\newif\ifjobyshowlogo
+\jobyshowlogotrue
+\renewcommand{\gothamInstituteLogoSquare}[1][3.2ex]{%
+	\ifjobyshowlogo\raisebox{0.2ex}{\jobymark[#1]{JobyWhite}}\fi
+}
+\renewenvironment{standinenv}{\usebeamertemplate{standin}\jobyshowlogofalse}{}
 
 % Mark on the title page (Gotham's title page logo slot).
 % The 1.5pt xshift is an optical correction (the mark's long tail sits to the right of its loop).
