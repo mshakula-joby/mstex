@@ -89,4 +89,33 @@
 \__joby_set_mono_font:
 \ExplSyntaxOff
 
+% --- fontsize option -------------------------------------------------------------------------------------
+% fontsize=<size> rescales the font size commands (\tiny ... \Huge) so that \normalsize is <size>. The ratio is
+% taken from the size the class gave \normalsize; math sizes are declared to match.
+\makeatletter
+\newcommand{\jobyscalesize}[1]{%
+	\begingroup #1\xdef\jobyoldsize{\f@size}\xdef\jobyoldskip{\strip@pt\dimexpr\f@baselineskip\relax}\endgroup
+	\expandafter\let\csname jobyorig\expandafter\@gobble\string#1\endcsname#1%
+	\edef\jobynewsize{\fpeval{round(\jobyoldsize*\jobyratio,2)}}%
+	\edef\jobynewskip{\fpeval{round(\jobyoldskip*\jobyratio,2)}}%
+	\edef#1{\expandafter\noexpand\csname jobyorig\expandafter\@gobble\string#1\endcsname
+		\noexpand\@setfontsize\noexpand#1{\jobynewsize pt}{\jobynewskip pt}}%
+	\DeclareMathSizes{\jobynewsize}{\jobynewsize}{\fpeval{round(\jobynewsize*0.7,2)}}{\fpeval{round(\jobynewsize*0.5,2)}}%
+}
+\newcommand{\jobyapplyfontsize}[1]{%
+	\begingroup \normalsize \xdef\jobybasesize{\f@size}\endgroup
+	\edef\jobyratio{\fpeval{#1/\jobybasesize}}%
+	\jobyscalesize\tiny \jobyscalesize\scriptsize \jobyscalesize\footnotesize \jobyscalesize\small
+	\jobyscalesize\normalsize \jobyscalesize\large \jobyscalesize\Large \jobyscalesize\LARGE
+	\jobyscalesize\huge \jobyscalesize\Huge
+}
+\makeatother
+\ExplSyntaxOn
+\tl_if_empty:NF \g_joby_fontsize_tl
+  {
+    \tl_remove_all:Nn \g_joby_fontsize_tl { pt }
+    \exp_args:NV \jobyapplyfontsize \g_joby_fontsize_tl
+  }
+\ExplSyntaxOff
+
 \endinput

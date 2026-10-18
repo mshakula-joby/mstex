@@ -1,0 +1,105 @@
+% rbd-support.sty
+%
+% Support macros for RAL/bare-metal design presentations: a Jira ticket glossary.
+%
+%   \setjirabaseurl{<base>}
+%       Sets the base of the Jira ticket URLs once, e.g. https://jira.example.com/browse/ (the ticket id is
+%       appended).
+%   \setgithubpullbaseurl{<base>}
+%       Sets the base of the GitHub pull request URLs once, e.g. https://git.example.com/Org/Repo/pull/ (the pull
+%       request number is appended).
+%   \addjirainfo[<pull request numbers>]{<id>}{<description>}
+%       Adds <id> to the "Jira Tickets" glossary with its description. The Jira URL is the Jira base URL followed
+%       by the id; each pull request number, one or several separated by commas, becomes a GitHub URL the same way.
+%   \gls{<id>}, \acrshort{<id>}, \acrlong{<id>}, \acrfull{<id>}
+%       The tickets are acronyms of the Jira glossary: the id is the short form and the title the long form.
+%       \gls writes the id in monospace, with the title in parentheses on first use ("id (title)"), and then just
+%       the id. The acronym commands do no formatting: \acrshort is the plain id, \acrlong the title and \acrfull
+%       "id (title)". Other acronyms of the document are not affected. The glossary lists the tickets that were
+%       cited.
+%   \printjiraglossary
+%       Prints the Jira glossary as a table of id, description and links (breakable across frames). Only the
+%       tickets that the document refers to, with \gls or the acronym commands, are listed.
+%
+% The glossary is of type "jira" (files .jlg, .jgs, .jgo; run makeglossaries, which latexmk can do with a
+% custom dependency). Load this package after the theme.
+
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{rbd-support}[2026/10/17 Jira ticket glossary for design presentations]
+
+\RequirePackage{hyperref}
+\RequirePackage{xparse}
+\RequirePackage{etoolbox}
+\@ifpackageloaded{glossaries}{}{\RequirePackage[nonumberlist]{glossaries}}
+
+\newglossary[jlg]{jira}{jgs}{jgo}{Jira Tickets}
+\makeglossaries
+% \gls is the one command that formats a ticket: the id in monospace, and on first use "id (title)" with the
+% title in the normal font. \acrfull of a ticket also reads "id (title)", plain. Other acronyms of the document
+% keep the acronym style they have; only the tickets (entries of the Jira glossary) are affected.
+% (At the start of the document: glossaries sets the default acronym style then, and that would replace it.)
+\AtBeginDocument{%
+	\let\jirasupportorigacrfullformat\genacrfullformat
+	\renewcommand*{\genacrfullformat}[2]{%
+		\edef\jirasupportentrytype{\glsentrytype{#1}}%
+		\ifdefstring{\jirasupportentrytype}{jira}%
+			{\glsentryshort{#1}\glsspace(\glsentrylong{#1})#2}%
+			{\jirasupportorigacrfullformat{#1}{#2}}%
+	}%
+}
+\defglsentryfmt[jira]{%
+	\ifdefempty{\glscustomtext}{%
+		\ifglsused{\glslabel}%
+			{\texttt{\glsentryshort{\glslabel}}}%
+			{\texttt{\glsentryshort{\glslabel}} (\glsentrylong{\glslabel})}%
+	}{\glscustomtext}% \acrshort, \acrlong and \acrfull give their own text: no formatting
+	\glsinsert
+}
+
+% --- The glossary entry ----------------------------------------------------------------------------------
+% The base URLs are used when the glossary is printed, so they can be set anywhere before it.
+\newcommand{\jirasupportjirabase}{}
+\newcommand{\jirasupportgithubbase}{}
+\NewDocumentCommand{\setjirabaseurl}{ m }{\renewcommand{\jirasupportjirabase}{#1}}
+\NewDocumentCommand{\setgithubpullbaseurl}{ m }{\renewcommand{\jirasupportgithubbase}{#1}}
+
+% The ticket is an acronym of the Jira glossary: the id is the short form and the title the long form, both
+% plain, so \acrshort, \acrlong and \acrfull print them without formatting.
+% The entry keeps the ticket id in user1 and the (optional) pull request numbers in user2.
+\NewDocumentCommand{\addjirainfo}{ o m m }{%
+	\IfNoValueTF{#1}{%
+		\newacronym[type=jira, sort={#2}, user1={#2}, user2={}]{#2}{#2}{#3}%
+	}{%
+		\newacronym[type=jira, sort={#2}, user1={#2}, user2={#1}]{#2}{#2}{#3}%
+	}%
+}
+
+% --- The glossary table ----------------------------------------------------------------------------------
+% One row per ticket: id, description, and the Jira and GitHub links. Rows are paragraphs, so the table can
+% break across frames (a tabular could not).
+% One "GitHub:" line for each URL in the comma-separated list.
+\newcommand{\jirasupportgithubline}[1]{\\GitHub: \edef\jirasupportpullurl{\jirasupportgithubbase#1}\href{\jirasupportpullurl}{\expandafter\nolinkurl\expandafter{\jirasupportpullurl}}}
+\newglossarystyle{jiratable}{%
+	\renewenvironment{theglossary}{\par\small}{\par}%
+	\renewcommand*{\glossaryheader}{%
+		\noindent\parbox[t]{0.14\linewidth}{\textbf{Ticket}}\hfill
+		\parbox[t]{0.36\linewidth}{\raggedright\textbf{Description}}\hfill
+		\parbox[t]{0.46\linewidth}{\raggedright\textbf{Links}}\par\medskip}%
+	\renewcommand*{\glossentry}[2]{%
+		\edef\jirasupporturl{\jirasupportjirabase\glsentryuseri{##1}}%
+		\edef\jirasupportgithub{\glsentryuserii{##1}}%
+		\noindent\parbox[t]{0.14\linewidth}{\texttt{\glsentryshort{##1}}}\hfill
+		\parbox[t]{0.36\linewidth}{\raggedright\glsentrylong{##1}}\hfill
+		\parbox[t]{0.46\linewidth}{\raggedright\scriptsize
+			Jira: \href{\jirasupporturl}{\expandafter\nolinkurl\expandafter{\jirasupporturl}}%
+			\ifdefempty{\jirasupportgithub}{}{\expandafter\forcsvlist\expandafter{\expandafter\jirasupportgithubline\expandafter}\expandafter{\jirasupportgithub}}%
+		}\par\smallskip}%
+	\providecommand*{\glossarysubgroupheading}[1]{}%
+	\renewcommand*{\glsgroupskip}{}%
+}
+
+\NewDocumentCommand{\printjiraglossary}{}{%
+	\printglossary[type=jira, style=jiratable, title={}]%
+}
+
+\endinput

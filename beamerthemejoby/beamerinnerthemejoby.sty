@@ -31,11 +31,25 @@
 % slides: their footer shows a lowercase roman numeral (i, ii, ...) instead. They are marked with the
 % frame option [jobyfront]; Gotham's [toc] option also runs it through tocenv.
 \newcounter{jobyfrontframe}
+% A frame that breaks over several slides (allowframebreaks) uses one numeral for each slide: the frame
+% starts after the numerals already used, shows the next numeral on each of its slides, and when it ends the
+% counter is advanced past all of them.
+\newcount\jobyfrontnum
+\newcount\jobyfrontlast
+% The numeral of the slide being shipped out; it also remembers the last one used by the frame.
+\newcommand{\jobyfrontshow}{%
+	\jobyfrontnum=\numexpr\jobyfrontbase\ifnum\beamer@autobreakcount>1 +\beamer@autobreakcount-1\fi\relax
+	\ifnum\jobyfrontnum>\jobyfrontlast\global\jobyfrontlast=\jobyfrontnum\fi
+	\romannumeral\jobyfrontnum
+}
 \newenvironment{jobyfrontenv}{%
 	\beamer@noframenumberingtrue
-	\stepcounter{jobyfrontframe}%
-	\def\insertframenumber{\romannumeral\value{jobyfrontframe}}%
-}{}
+	\edef\jobyfrontbase{\the\numexpr\value{jobyfrontframe}+1\relax}%
+	\global\jobyfrontlast=\value{jobyfrontframe}\relax
+	\let\insertframenumber\jobyfrontshow
+}{%
+	\global\c@jobyfrontframe=\jobyfrontlast\relax
+}
 \ExplSyntaxOn
 \__gotham_add_beamerframe_key:n { jobyfront }
 \ExplSyntaxOff

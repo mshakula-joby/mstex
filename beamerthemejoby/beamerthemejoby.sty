@@ -12,8 +12,14 @@
 %                    blue (default; also default or light), orange, green, navy, osaka. Add -dark for
 %                    the dark variant (osaka-dark, ...); dark alone is blue-dark. Dark variants use a
 %                    more muted version of the primary color for title bars and standout slides.
+%   fontsize=<size>  scales every font size so that the normal text is <size>, e.g. fontsize=6pt (Beamer's
+%                    own sizes stop at 8pt: the 8pt and 9pt options already use the extsizes package, and
+%                    sizes it does not know, such as 6pt, silently fall back to 11pt). Give the class a base
+%                    size close to the one you want, e.g. \documentclass[8pt]{beamer}.
 %   proprietary      marks the deck as proprietary: adds a notice to the footer and a notice slide
 %                    after the title page.
+%   legal            adds Joby's legal disclaimer (legal-disclaimer.tex in this directory) as standin
+%                    slides, as many as the text needs, after the proprietary notice and before the outline.
 %
 % The institute defaults to \institute{Joby Aviation}; set your own \institute to override it.
 %
@@ -46,8 +52,10 @@
 % supplies \textit and \scshape/\textsc when it is installed; without it italics are slanted Joby Sans.
 %
 % Slides and numbering:
-%   Title page      - title, author and date, with the Joby mark in Joby Blue below. Not numbered.
+%   Title page      - title, author, institute and date, centered in that order, with the Joby mark in Joby
+%                     Blue below. Not numbered.
 %   Notice slide    - with the proprietary option, a centered notice right after the title page.
+%   Legal slides    - with the legal option, the legal disclaimer follows it, split over standin slides.
 %   Outline         - [toc] frames list sections with the number of each heading slide.
 %   Heading slides  - section, subsection (part, subsubsection) pages are numbered like any other slide.
 %   Front matter    - the notice slide and the outline are numbered i, ii, ... and not counted, so the
@@ -89,13 +97,18 @@
 
 \ExplSyntaxOn
 \tl_new:N \g_joby_palette_tl
+\tl_new:N \g_joby_fontsize_tl
 \tl_gset:Nn \g_joby_palette_tl { blue }
 \bool_new:N \g_joby_proprietary_bool
+\bool_new:N \g_joby_legal_bool
 \keys_define:nn { joby }
   {
     palette .tl_gset:N = \g_joby_palette_tl ,
+    fontsize .tl_gset:N = \g_joby_fontsize_tl ,
     proprietary .bool_gset:N = \g_joby_proprietary_bool ,
     proprietary .default:n = { true } ,
+    legal .bool_gset:N = \g_joby_legal_bool ,
+    legal .default:n = { true } ,
   }
 \ExplSyntaxOff
 \ProcessKeyOptions[joby]

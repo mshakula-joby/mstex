@@ -140,10 +140,87 @@ PY
 			corner STANDOUT-FRAME logo && pass "$name standout slide has the logo" || fail "$name standout slide has the logo"
 			corner APPENDIX-FRAME none && pass "$name appendix slide has no logo" || fail "$name appendix slide has no logo"
 			;;
+		rbd-support)
+			expect_text "FIRST-DESCRIPTION" "$name"; expect_text "SECOND-DESCRIPTION" "$name"
+			expect_text "https://jira.example.com/browse/S4TC-1000" "$name"; expect_text "https://jira.example.com/browse/S4TC-1001" "$name"
+			expect_text "THIRD-DESCRIPTION" "$name"
+			# A ticket that is defined but never cited is not listed (neither its title nor its pull request).
+			expect_no_text "UNREFERENCED-DESCRIPTION" "$name"; expect_no_text "https://git.example.com/pull/9" "$name"
+			for u in 42 43 7; do expect_text "https://git.example.com/pull/$u" "$name"; done
+			# One GitHub line per pull request: two for S4TC-1001, one each for S4TC-1002 and S4TC-1004, none for S4TC-1000.
+			[ "$(pdftotext "build/$name.pdf" - | grep -c "^GitHub:")" = 4 ] && pass "$name has one GitHub line per pull request" || fail "$name has one GitHub line per pull request"
+			expect_text "Cites S4TC-1000 and S4TC-1001 in the text, and S4TC-1002." "$name"
+			expect_text "First: S4TC-1004 (FOURTH-DESCRIPTION used through gls). Again: S4TC-1004." "$name"
+			expect_text "Short: S4TC-1002." "$name"; expect_text "Long: THIRD-DESCRIPTION with one pull request." "$name"
+			expect_text "Full: S4TC-1002 (THIRD-DESCRIPTION with one pull request)." "$name"
+			# Other acronyms keep the default "long (short)" style.
+			expect_text "Other: OTHER-ACRONYM-LONG (XX), OTHER-ACRONYM-LONG (XX)." "$name"
+			expect_text "https://git.example.com/pull/5" "$name"
+			# \gls writes the id in monospace (page 2); the acronym commands do no formatting (pages 3, 4 and 5 have no monospace).
+			pdffonts -f 2 -l 2 "build/$name.pdf" | grep -q "UbuntuMono" && pass "$name \\gls writes the id in monospace" || fail "$name \\gls writes the id in monospace"
+			for pg in 1 3 4 5; do
+				pdffonts -f $pg -l $pg "build/$name.pdf" | grep -q "UbuntuMono" && fail "$name acronym commands on page $pg do no formatting" || pass "$name acronym commands on page $pg do no formatting"
+			done
+			;;
+		joby-legal)
+			for h in "Confidentiality and Disclosures" "Forward-Looking Statements" "Statement Regarding Non-GAAP Financial Measures" "Use of Projections" "Important Information and Where to Find It" "Trademarks"; do expect_text "$h" "$name"; done
+			expect_text "Legal Disclaimers (i)" "$name"
+			# Order: title page, proprietary notice, the legal slides, then the outline.
+			n=$(pdfinfo "build/$name.pdf" | awk '/Pages/{print $2}'); notice=; legal=; outline=
+			for pg in $(seq 1 $n); do t=$(pdftotext -f $pg -l $pg "build/$name.pdf" - 2>/dev/null)
+				[ -z "$notice" ] && grep -q "is Joby Aviation Proprietary" <<<"$t" && notice=$pg
+				[ -z "$legal" ] && grep -q "^Legal Disclaimers" <<<"$t" && legal=$pg
+				[ -z "$outline" ] && grep -q "^Outline" <<<"$t" && outline=$pg
+			done
+			[ -n "$notice" ] && [ -n "$legal" ] && [ -n "$outline" ] && [ "$notice" -lt "$legal" ] && [ "$legal" -lt "$outline" ] && pass "$name legal slides come after the proprietary notice and before the outline" || fail "$name legal slides come after the proprietary notice and before the outline"
+			[ "$((outline - legal))" -gt 1 ] && pass "$name legal text is split over several slides ($((outline - legal)))" || fail "$name legal text is split over several slides"
+			# Roman numerals increase from slide to slide: notice i, legal ii.., then the outline continues.
+			numerals=$(for pg in $(seq $notice $outline); do pdftotext -f $pg -l $pg "build/$name.pdf" - | grep -E '^[ivxl]+$' | tail -1; done | tr '\n' ' ')
+			expected=$(python3 -I -c "
+def roman(n):
+    out=''
+    for v,r in ((50,'l'),(40,'xl'),(10,'x'),(9,'ix'),(5,'v'),(4,'iv'),(1,'i')):
+        while n>=v: out+=r; n-=v
+    return out
+print(' '.join(roman(i) for i in range(1, $outline - $notice + 2)))")
+			[ "$numerals" = "$expected " ] && pass "$name front matter slides are numbered i, ii, iii, ... in order ($numerals)" || fail "$name front matter slides are numbered in order (got: $numerals; expected: $expected)"
+			pdftoppm -r 20 -f $legal -l $legal -png "build/$name.pdf" "build/$name-lg"
+			python3 -I - "$(ls build/$name-lg-*.png | head -1)" <<'PY' && pass "$name legal slides use the standin style (no title bar)" || fail "$name legal slides use the standin style (no title bar)"
+import sys
+from PIL import Image
+r, g, b = Image.open(sys.argv[1]).convert("RGB").getpixel((30, 3))
+sys.exit(1 if b - r > 80 else 0)
+PY
+			;;
+		joby-fontsize)
+			h() { pdftotext -f 1 -l 1 -bbox "build/$1.pdf" - | python3 -I -c "
+import re,sys
+m=re.search(r'yMin=\"([\\d.]+)\" xMax=\"[\\d.]+\" yMax=\"([\\d.]+)\">SIZEWORD', sys.stdin.read())
+print(float(m.group(2))-float(m.group(1)))"; }
+			ratio=$(python3 -I -c "print(round($(h joby-fontsize)/$(h joby-fontsize-base),3))")
+			python3 -I -c "import sys; sys.exit(0 if 0.70 < $ratio < 0.80 else 1)" && pass "$name text is 6/8 of the base size (ratio $ratio)" || fail "$name text is 6/8 of the base size (ratio $ratio)" ;;
+		joby-titlepage)
+			pdftotext -f 1 -l 1 -bbox "build/$name.pdf" "build/$name.bbox.html"
+			python3 -I - "build/$name.bbox.html" <<'PY' && pass "$name author, institute (centered) and date are in that order" || fail "$name author, institute (centered) and date are in that order"
+import re, sys
+html = open(sys.argv[1]).read()
+W = float(re.search(r'width="([\d.]+)"', html).group(1))
+words = {w: tuple(map(float, (a, b, c, d))) for a, b, c, d, w in re.findall(r'xMin="([\d.]+)" yMin="([\d.]+)" xMax="([\d.]+)" yMax="([\d.]+)">([^<]*)<', html)}
+au, ins, da = words["AUTHOR-WORD"], words["INSTITUTE-WORD"], words["DATE-WORD"]
+assert au[1] < ins[1] < da[1], "order author < institute < date"
+centre = lambda w: (w[0] + w[2]) / 2
+assert abs(centre(ins) - centre(au)) < 3, "institute centered under the author"
+assert abs(centre(ins) - W / 2) < 6, "institute centered on the page"
+PY
+			;;
+		joby-titlepage-noinstitute)
+			expect_text "AUTHOR-WORD" "$name"; expect_text "DATE-WORD" "$name"; expect_no_text "Joby Aviation" "$name"
+			;;
 		joby-toc)
 			p2=$(pdftotext -f 2 -l 2 "build/$name.pdf" -)
 			for n in i 1 3 6; do grep -qx "$n" <<<"$p2" && pass "$name outline page shows '$n'" || fail "$name outline page shows '$n'"; done ;;
 		joby-proprietary)
+			expect_no_text "Legal Disclaimers" "$name"
 			expect_text "is Joby Aviation Proprietary." "$name"
 			expect_text "authorization from Joby Aviation." "$name"
 			expect_text "PROPRIETARY INFORMATION. DO NOT DISTRIBUTE." "$name"
@@ -282,7 +359,8 @@ PY
 			expect_no_text "git:" "$name"
 			expect_text "JOBY AVIATION" "$name"
 			expect_no_text "PROPRIETARY INFORMATION" "$name"
-			expect_no_text "Proprietary." "$name" ;;
+			expect_no_text "Proprietary." "$name"
+			expect_no_text "Legal Disclaimers" "$name" ;;
 		joby-revision-*) expect_text "(git:v1.2.3)" "$name" 1 ;;
 		revision-number)
 			expect_text "(git:v1.2.3)" "$name" 1

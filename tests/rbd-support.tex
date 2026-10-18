@@ -1,0 +1,38 @@
+% rbd-support (base URLs set once; only ids and pull request numbers are given): \addjirainfo, \gls (monospace id,
+% title in parentheses on first use), the plain acronym commands and the Jira glossary table.
+\documentclass[aspectratio=169,10pt]{beamer}
+\usetheme{joby}
+\usepackage{rbd-support}
+\setjirabaseurl{https://jira.example.com/browse/}
+\setgithubpullbaseurl{https://git.example.com/pull/}
+\addjirainfo{S4TC-1000}{FIRST-DESCRIPTION without a pull request}
+\addjirainfo[42,43]{S4TC-1001}{SECOND-DESCRIPTION with a pull request}
+\addjirainfo[7]{S4TC-1002}{THIRD-DESCRIPTION with one pull request}
+\addjirainfo[5]{S4TC-1004}{FOURTH-DESCRIPTION used through gls}
+\addjirainfo[9]{S4TC-1003}{UNREFERENCED-DESCRIPTION is never cited}
+\newacronym{xx}{XX}{OTHER-ACRONYM-LONG}
+\title{Support}
+\author{Test Author}
+\begin{document}
+\begin{frame}{Citing tickets}
+	Cites \acrshort{S4TC-1000} and \acrshort{S4TC-1001} in the text, and \acrshort{S4TC-1002}.
+\end{frame}
+\begin{frame}{Gls}
+	First: \gls{S4TC-1004}. Again: \gls{S4TC-1004}.
+\end{frame}
+\begin{frame}{Short}
+	Short: \acrshort{S4TC-1002}.
+\end{frame}
+\begin{frame}{Long}
+	Long: \acrlong{S4TC-1002}.
+\end{frame}
+\begin{frame}{Other}
+	Other: \gls{xx}, \acrfull{xx}.
+\end{frame}
+\begin{frame}{Full}
+	Full: \acrfull{S4TC-1002}.
+\end{frame}
+\begin{frame}[allowframebreaks]{Tickets}
+	\printjiraglossary
+\end{frame}
+\end{document}

@@ -106,7 +106,15 @@
 }
 \setbeamertemplate{frametitle continuation}[default/gotham]
 
-% The institute is shown in the footer, so keep it off the title page.
+% The title page shows the institute centered under the author and above the date, so the author template
+% carries it (Gotham puts the date between the two) and the institute's own, left-aligned line is empty.
+\defbeamertemplate*{author}{joby}{%
+	\vspace*{1.em}
+	\insertauthor
+	\par
+	\expandafter\ifblank\expandafter{\insertinstitute}{}{\vspace*{0.25em}\insertinstitute\par}%
+	\vspace*{0.25em}
+}
 \defbeamertemplate{institute}{joby}{}
 \setbeamertemplate{institute}[joby]
 
@@ -152,6 +160,16 @@
 		Do not distribute without prior authorization from \jobyorg.\par
 	\end{frame}%
 }
+% The legal disclaimer: standin slides in the front matter (roman numerals), after the proprietary notice and
+% before the outline. The frame breaks across as many slides as the text needs; the text is in a file.
+% (standin is the last option: it opens a group that makes the options after it unknown.)
+\newcommand{\jobylegalslides}{%
+	\begin{frame}[allowframebreaks, jobyfront, standin]{Legal Disclaimers}
+		\footnotesize
+		\setlength{\parskip}{0pt}\setlength{\parindent}{0pt}
+		\input{legal-disclaimer}
+	\end{frame}%
+}
 \ExplSyntaxOn
 \AtBeginDocument
   {
@@ -159,6 +177,11 @@
       {
         \apptocmd { \maketitle } { \jobyproprietaryslide } { }
           { \PackageWarning { beamerouterthemejoby } { Could~not~patch~\string\maketitle;~no~proprietary~slide } }
+      }
+    \bool_if:NT \g_joby_legal_bool
+      {
+        \apptocmd { \maketitle } { \jobylegalslides } { }
+          { \PackageWarning { beamerouterthemejoby } { Could~not~patch~\string\maketitle;~no~legal~slides } }
       }
   }
 \ExplSyntaxOff
