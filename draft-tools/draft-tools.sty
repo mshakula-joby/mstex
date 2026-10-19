@@ -3,12 +3,13 @@
 % Package to define custom commands for drafting a project.
 %
 % Options:
-%   draft      show \draft, \idea and \directions notes (hidden otherwise).
+%   drafttext  show \draft, \idea and \directions notes (hidden otherwise).
 %   draftpics  replace \includegraphics images and tikzpicture environments with placeholder boxes naming
 %              the image file or the source file and line of the picture, so drafts compile faster.
 %              Pictures that are overlays, fix their own bounding box (\useasboundingbox) or draw no
 %              \node/\draw/\path/\matrix/\pic (rules and bars: page decoration) are kept. The \tikz
 %              command is not replaced. Nested tikzpicture environments are not supported.
+%   draft      both drafttext and draftpics.
 
 \NeedsTeXFormat{LaTeX2e}
 \ProvidesPackage{draft-tools}[Drafting Tools for LaTeX]
@@ -16,15 +17,15 @@
 \RequirePackage[dvipsnames]{xcolor}
 \RequirePackage{lipsum}
 
-\newif\ifdraft
-
+\newif\ifdrafttext
 \newif\ifdraftpics
 
-\DeclareOption{draft}{\drafttrue}
+\DeclareOption{drafttext}{\drafttexttrue}
 % Replace images and TikZ pictures with placeholders that name the file they came from, so drafts
 % compile fast and show where each graphic goes. Pictures that must stay real (e.g. a theme's logo)
 % stay real when they look like decoration (see below).
 \DeclareOption{draftpics}{\draftpicstrue}
+\DeclareOption{draft}{\drafttexttrue\draftpicstrue}
 
 \ProcessOptions
 
@@ -45,7 +46,7 @@
 
 
 % Drafting commands.
-\ifdraft
+\ifdrafttext
   \newcommand{\draft}[1]{%
     \if\relax\detokenize{#1}\relax%
       {\color{WildStrawberry}[\dots]}%

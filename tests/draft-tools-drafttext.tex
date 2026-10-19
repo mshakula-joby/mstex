@@ -1,0 +1,23 @@
+% draft-tools with the drafttext option: drafting commands are visible.
+\documentclass{article}
+\usepackage{graphicx}
+\usepackage[drafttext]{draft-tools}
+\begin{document}
+Before. \draft{a drafting note} After.
+
+\draft{}
+
+\idea{an idea} and \directions{some directions}.
+
+\idea{idea first paragraph
+
+idea second paragraph}
+
+\fbox{\rule{1cm}{1cm}} % real content: pictures are not replaced by drafttext
+
+\begin{discardcontent}
+DISCARDED-TEXT
+\end{discardcontent}
+
+Trimmed: [\trimspaces{   spaced out   }]
+\end{document}

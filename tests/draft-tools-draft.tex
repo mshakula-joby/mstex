@@ -1,20 +1,13 @@
-% draft-tools with the draft option: drafting commands are visible.
+% draft-tools with the draft option: drafttext and draftpics together.
 \documentclass{article}
+\usepackage{tikz}
 \usepackage[draft]{draft-tools}
 \begin{document}
-Before. \draft{a drafting note} After.
+A \draft{drafting note} and \idea{an idea}.
 
-\draft{}
+\includegraphics[width=3cm]{missing-image.png}
 
-\idea{an idea} and \directions{some directions}.
-
-\idea{idea first paragraph
-
-idea second paragraph}
-
-\begin{discardcontent}
-DISCARDED-TEXT
-\end{discardcontent}
-
-Trimmed: [\trimspaces{   spaced out   }]
+\begin{tikzpicture}
+	\node {DROPPED-NODE};
+\end{tikzpicture}
 \end{document}

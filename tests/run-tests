@@ -378,9 +378,12 @@ PY
 		revision-number)
 			expect_text "(git:v1.2.3)" "$name" 1
 			expect_text "2026-01-02 03:04:05-07:00 (git:v1.2.3)" "$name" 1 ;;
-		draft-tools-draft)
+		draft-tools-drafttext)
 			expect_text "a drafting note" "$name"; expect_text "an idea" "$name"; expect_text "some directions" "$name"
 			expect_text "[spaced out]" "$name"; expect_text "idea second paragraph" "$name" ;;
+		draft-tools-draft)
+			expect_text "drafting note" "$name"; expect_text "an idea" "$name"
+			expect_text "missing-image.png" "$name"; expect_text "TikZ picture" "$name"; expect_no_text "DROPPED-NODE" "$name" ;;
 		draft-tools-pics)
 			expect_text "missing-image.png" "$name"; expect_text "TikZ picture" "$name"
 			expect_text "draft-tools-pics-inner.tex:1" "$name"; expect_text "draft-tools-pics.tex:11" "$name"
