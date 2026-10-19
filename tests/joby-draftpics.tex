@@ -1,0 +1,14 @@
+% The Joby theme's own pictures (footer mark, title page logo) survive draftpics.
+\documentclass[aspectratio=169,10pt]{beamer}
+\usepackage{tikz}
+\usetheme{joby}
+\usepackage[draftpics]{draft-tools}
+\title{Draft Pictures}
+\author{Test Author}
+\begin{document}
+\maketitle
+\begin{frame}{Pic}
+	\includegraphics{some-figure.pdf}
+	\begin{tikzpicture}\node{DROPPED-IN-FRAME};\end{tikzpicture}
+\end{frame}
+\end{document}

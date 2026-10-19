@@ -1,0 +1,28 @@
+% draft-tools with draftpics: images and TikZ pictures become placeholders naming their source,
+% except pictures that are overlays or fix their own bounding box.
+\documentclass{article}
+\usepackage{tikz}
+\usepackage[draftpics]{draft-tools}
+\begin{document}
+Before.
+
+\includegraphics[width=3cm]{missing-image.png}
+
+\begin{tikzpicture}
+	\node {DROPPED-NODE};
+\end{tikzpicture}
+
+\begin{tikzpicture}[remember picture, overlay]
+	\node at (current page.center) {KEPT-OVERLAY};
+\end{tikzpicture}
+
+\begin{tikzpicture}
+	\useasboundingbox (0,0) rectangle (1,1);
+	\node {KEPT-ICON};
+\end{tikzpicture}
+
+Inline \tikz[baseline]{\node{KEPT-INLINE};} text.
+
+\input{fragments/draft-tools-pics-inner}
+After.
+\end{document}

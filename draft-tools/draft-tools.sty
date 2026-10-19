@@ -1,6 +1,14 @@
 % draft-tools.sty
 % 
 % Package to define custom commands for drafting a project.
+%
+% Options:
+%   draft      show \draft, \idea and \directions notes (hidden otherwise).
+%   draftpics  replace \includegraphics images and tikzpicture environments with placeholder boxes naming
+%              the image file or the source file and line of the picture, so drafts compile faster.
+%              Pictures that are overlays, fix their own bounding box (\useasboundingbox) or draw no
+%              \node/\draw/\path/\matrix/\pic (rules and bars: page decoration) are kept. The \tikz
+%              command is not replaced. Nested tikzpicture environments are not supported.
 
 \NeedsTeXFormat{LaTeX2e}
 \ProvidesPackage{draft-tools}[Drafting Tools for LaTeX]
@@ -10,7 +18,13 @@
 
 \newif\ifdraft
 
+\newif\ifdraftpics
+
 \DeclareOption{draft}{\drafttrue}
+% Replace images and TikZ pictures with placeholders that name the file they came from, so drafts
+% compile fast and show where each graphic goes. Pictures that must stay real (e.g. a theme's logo)
+% stay real when they look like decoration (see below).
+\DeclareOption{draftpics}{\draftpicstrue}
 
 \ProcessOptions
 
@@ -23,7 +37,7 @@
 
 % Trim spaces macro to trim spaces from the beginning and end of a string.
 \ExplSyntaxOn
-\NewDocumentCommand{\trimspaces}{m}
+\NewDocumentCommand{\trimspaces}{+m}
 {
   \tl_trim_spaces:n{#1}
 }
@@ -62,6 +76,99 @@
   }
   \newcommand{\idea}[1]{}
   \newcommand{\directions}[1]{}
+\fi
+
+% Draft pictures.
+\ifdraftpics
+  \RequirePackage{graphicx}
+  \makeatletter\Gin@drafttrue\makeatother % \includegraphics draws a box with the file name instead of reading the file.
+  \ExplSyntaxOn
+  \newcount\l__draft_tikz_line_int
+  \bool_new:N \l__draft_tikz_real_bool
+  \NewDocumentCommand{\__draft_picturebox:nn}{mm}
+  {
+    \leavevmode
+    \begingroup
+      \fboxsep=1ex
+      \fcolorbox{WildStrawberry}{white}
+      {
+        \parbox[c][3\baselineskip]{.5\linewidth}
+        {
+          \centering\color{WildStrawberry}\ttfamily\small
+          #1\par #2
+        }
+      }
+    \endgroup
+  }
+  % \begin{tikzpicture} is told apart from the \tikz command (which calls \tikzpicture directly and must keep
+  % working) by a hook on the environment. The environment's body is collected up to \end{tikzpicture} to
+  % decide whether it is document content (replaced) or artwork that has to stay real: overlay pictures,
+  % pictures that fix their own bounding box, and pictures that draw no nodes or paths (rules and bars
+  % filled in with \fill, i.e. page decoration).
+  \bool_new:N \g__draft_tikz_env_bool
+  \bool_new:N \l__draft_tikz_skipend_bool
+  \tl_new:N \g__draft_tikz_body_tl
+  \protected\long\def\__draft_tikz_collect:w #1 \end #2
+  {
+    \tl_gput_right:Nn \g__draft_tikz_body_tl {#1}
+    \str_if_eq:nnTF {#2} {tikzpicture}
+      { \__draft_tikz_finish: }
+      { \tl_gput_right:Nn \g__draft_tikz_body_tl { \end {#2} } \__draft_tikz_collect:w }
+  }
+  \cs_new_protected:Npn \__draft_tikz_finish:
+  {
+    \bool_set_true:N \l__draft_tikz_real_bool
+    \clist_map_inline:nn {\node, \draw, \path, \matrix, \pic}
+      {\tl_if_in:NnT \g__draft_tikz_body_tl {##1} {\bool_set_false:N \l__draft_tikz_real_bool}}
+    \tl_if_in:NnT \g__draft_tikz_body_tl {overlay} {\bool_set_true:N \l__draft_tikz_real_bool}
+    \tl_if_in:NnT \g__draft_tikz_body_tl {\useasboundingbox} {\bool_set_true:N \l__draft_tikz_real_bool}
+    % The environment's own \end{tikzpicture} must then not end a picture.
+    \bool_set_true:N \l__draft_tikz_skipend_bool
+    \bool_if:NTF \l__draft_tikz_real_bool
+      {
+        \group_begin:
+          \bool_set_false:N \l__draft_tikz_skipend_bool
+          \__draft_tikzpicture_orig: \tl_use:N \g__draft_tikz_body_tl \__draft_endtikzpicture_orig:
+        \group_end:
+      }
+      {
+        \__draft_picturebox:nn
+          {TikZ~picture}
+          {
+            \tl_if_empty:NTF \CurrentFile {\c_sys_jobname_str .tex} {\tl_to_str:N \CurrentFile}
+            :\int_use:N \l__draft_tikz_line_int
+          }
+      }
+    \end{tikzpicture}
+  }
+  \AtBeginDocument
+  {
+    \cs_if_exist:NT \tikzpicture
+    {
+      \cs_set_eq:NN \__draft_tikzpicture_orig: \tikzpicture
+      \cs_set_eq:NN \__draft_endtikzpicture_orig: \endtikzpicture
+      \AddToHook {env/tikzpicture/before}
+        {
+          \int_gset:Nn \l__draft_tikz_line_int {\inputlineno}
+          \bool_gset_true:N \g__draft_tikz_env_bool
+        }
+      \cs_set_protected:Npn \tikzpicture
+        {
+          \bool_if:NTF \g__draft_tikz_env_bool
+            {
+              \bool_gset_false:N \g__draft_tikz_env_bool
+              \tl_gclear:N \g__draft_tikz_body_tl
+              \__draft_tikz_collect:w
+            }
+            { \__draft_tikzpicture_orig: }
+        }
+      \cs_set_protected:Npn \endtikzpicture
+        {
+          \bool_if:NF \l__draft_tikz_skipend_bool { \__draft_endtikzpicture_orig: }
+        }
+    }
+  }
+  \ExplSyntaxOff
 \fi
 
 \endinput
