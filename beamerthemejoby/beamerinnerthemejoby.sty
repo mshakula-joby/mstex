@@ -47,6 +47,9 @@
 	\edef\jobyfrontbase{\the\numexpr\value{jobyfrontframe}+1\relax}%
 	\global\jobyfrontlast=\value{jobyfrontframe}\relax
 	\let\insertframenumber\jobyfrontshow
+	% A \label in the slide names its roman numeral (see \refcounter in beamerthemejoby.sty).
+	\jobyinfronttrue
+	\jobyslidelabel{}{\romannumeral\jobyfrontbase}%
 }{%
 	\global\c@jobyfrontframe=\jobyfrontlast\relax
 }

@@ -32,7 +32,8 @@
 %   revision-number - the revision (\makerevision) is printed small in the title page's bottom right corner.
 %   listings        - code blocks use the palette's accent color as their background.
 %   cleveref        - \cref links work (Beamer disables them) and cover the whole name, "Figure 1".
-%                   Load cleveref after the theme.
+%                   Load cleveref after the theme. A \label in a frame names the slide as the footer
+%                   shows it (\ref gives "5", \cref gives "slide 5", front matter slides "slide ii").
 %   glossaries      - a glossary prints without its own section heading (the frame title is the heading).
 %                   Number lists show physical PDF pages, so load glossaries with nonumberlist.
 %
@@ -195,9 +196,39 @@
 	}%
 	\AddToHook{package/cleveref/after}{%
 		\expandafter\let\csname opt@hyperref.sty\endcsname\jobysavedopthyperref
+		\jobycleverefslides
 	}%
 }
-\makeatother
+
+% A \label inside a frame names the slide, shown the way the footer shows it: \ref prints its number and
+% (with cleveref) \cref prints "slide 5". Beamer sets \@currentlabel from the frame number at the start of
+% every frame (\refcounter{framenumber}); the front matter slides, which are numbered with roman numerals,
+% replace that with their numeral. cleveref keeps its own record of the label, taken from \@currentcounter
+% (the counter last stepped, which would be the section), so that is set as well.
+\newif\ifjobyinfront
+\newcommand{\jobyslidelabel}[2]{%
+	\protected@edef\@currentlabel{#2}%
+	\def\@currentcounter{#1}%
+	\ifdefined\cref@currentlabel
+		\protected@edef\cref@currentlabel{[framenumber][#2][]#2}%
+	\fi
+}
+\let\jobyrefcounter@orig\refcounter
+\def\refcounter#1{%
+	\jobyrefcounter@orig{#1}%
+	\def\@tempa{#1}\def\@tempb{framenumber}%
+	\ifx\@tempa\@tempb
+		\ifjobyinfront
+			\jobyslidelabel{}{\romannumeral\jobyfrontbase}%
+		\else
+			\jobyslidelabel{framenumber}{\arabic{framenumber}}%
+		\fi
+	\fi
+}
+\newcommand{\jobycleverefslides}{%
+	\crefname{framenumber}{slide}{slides}%
+	\Crefname{framenumber}{Slide}{Slides}%
+}
 
 \jobywithpackage{listings}{%
 	\lstset{

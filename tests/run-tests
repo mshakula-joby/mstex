@@ -333,6 +333,13 @@ assert covers("fig.", 1), "\\cref link does not cover 'fig. 1'"
 assert covers("Figure", 1), "\\Cref link does not cover 'Figure 1'"
 PY
 			;;
+		joby-slideref)
+			# \label in a frame names the slide as the footer shows it; \ref prints the number, \cref "slide N".
+			expect_text "Refs: slide 2, Slide 3, 2, and slides 2 and 3." "$name"
+			expect_text "Later: slide 4, slide i, slide 9." "$name"
+			for l in sl:one sl:two sl:broken sl:toc sl:app; do
+				grep -aq "/D *($l)" "build/$name.pdf" && pass "$name links to $l" || fail "$name links to $l"
+			done ;;
 		joby-framebreaks)
 			pdftotext -f 1 -l 1 "build/$name.pdf" - | grep -q "SHORT-FRAME" && ! pdftotext -f 1 -l 1 "build/$name.pdf" - | grep -q "(i)" && pass "$name unbroken allowframebreaks frame has no (i)" || fail "$name unbroken allowframebreaks frame has no (i)"
 			expect_text "LONG-FRAME (i)" "$name"; expect_text "LONG-FRAME (ii)" "$name"; expect_text "LONG-FRAME (iii)" "$name"

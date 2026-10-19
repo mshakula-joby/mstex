@@ -1,0 +1,37 @@
+% \label in a frame names the slide as the footer shows it: \ref prints the number and \cref prints "slide N",
+% for ordinary, front matter (roman numeral), broken and appendix slides.
+\documentclass[aspectratio=169,10pt]{beamer}
+\directlua{pdf.setcompresslevel(0) pdf.setobjcompresslevel(0)}% readable link annotations for the check
+\usetheme{joby}
+\usepackage{cleveref}
+\usepackage{lipsum}
+\title{Slide refs}
+\author{Test Author}
+\begin{document}
+\maketitle
+\begin{frame}[toc]{Outline}
+	\label{sl:toc}
+	\tableofcontents
+\end{frame}
+\section{First}
+\begin{frame}{One}\label{sl:one}
+	Body one.
+\end{frame}
+\begin{frame}{Two}
+	\label{sl:two}
+	Refs: \cref{sl:one}, \Cref{sl:two}, \ref{sl:one}, and \cref{sl:one,sl:two}.
+\end{frame}
+\begin{frame}[allowframebreaks]{Broken}
+	\label{sl:broken}
+	\lipsum[1-4]
+\end{frame}
+\begin{frame}{After}
+	Later: \cref{sl:broken}, \cref{sl:toc}, \cref{sl:app}.
+\end{frame}
+\appendix
+\section{Extra}
+\begin{frame}{Appendix slide}
+	\label{sl:app}
+	Appendix body.
+\end{frame}
+\end{document}
