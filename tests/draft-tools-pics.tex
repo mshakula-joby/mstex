@@ -1,7 +1,8 @@
 % draft-tools with draftpics: images and TikZ pictures become placeholders naming their source,
 % except pictures that are overlays or fix their own bounding box.
 \documentclass{article}
-\usepackage{tikz}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
 \usepackage[draftpics]{draft-tools}
 \begin{document}
 Before.
@@ -19,6 +20,12 @@ Before.
 \begin{tikzpicture}
 	\useasboundingbox (0,0) rectangle (1,1);
 	\node {KEPT-ICON};
+\end{tikzpicture}
+
+\begin{tikzpicture}
+	\begin{axis}[title={DROPPED-PLOT}]
+		\addplot coordinates {(0,0) (1,1)};
+	\end{axis}
 \end{tikzpicture}
 
 Inline \tikz[baseline]{\node{KEPT-INLINE};} text.

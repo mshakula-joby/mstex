@@ -7,7 +7,7 @@
 %   draftpics  replace \includegraphics images and tikzpicture environments with placeholder boxes naming
 %              the image file or the source file and line of the picture, so drafts compile faster.
 %              Pictures that are overlays, fix their own bounding box (\useasboundingbox) or draw no
-%              \node/\draw/\path/\matrix/\pic (rules and bars: page decoration) are kept. The \tikz
+%              \node/\draw/\path/\matrix/\pic/\addplot (rules and bars: page decoration) are kept. The \tikz
 %              command is not replaced. Nested tikzpicture environments are not supported.
 %   draft      both drafttext and draftpics.
 
@@ -119,7 +119,7 @@
   \cs_new_protected:Npn \__draft_tikz_finish:
   {
     \bool_set_true:N \l__draft_tikz_real_bool
-    \clist_map_inline:nn {\node, \draw, \path, \matrix, \pic}
+    \clist_map_inline:nn {\node, \draw, \path, \matrix, \pic, \addplot}
       {\tl_if_in:NnT \g__draft_tikz_body_tl {##1} {\bool_set_false:N \l__draft_tikz_real_bool}}
     \tl_if_in:NnT \g__draft_tikz_body_tl {overlay} {\bool_set_true:N \l__draft_tikz_real_bool}
     \tl_if_in:NnT \g__draft_tikz_body_tl {\useasboundingbox} {\bool_set_true:N \l__draft_tikz_real_bool}

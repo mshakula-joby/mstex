@@ -396,8 +396,8 @@ PY
 			expect_text "missing-image.png" "$name"; expect_text "TikZ picture" "$name"; expect_no_text "DROPPED-NODE" "$name" ;;
 		draft-tools-pics)
 			expect_text "missing-image.png" "$name"; expect_text "TikZ picture" "$name"
-			expect_text "draft-tools-pics-inner.tex:1" "$name"; expect_text "draft-tools-pics.tex:11" "$name"
-			expect_no_text "DROPPED-NODE" "$name"; expect_no_text "DROPPED-INNER" "$name"
+			expect_text "draft-tools-pics-inner.tex:1" "$name"; expect_text "draft-tools-pics.tex:12" "$name"
+			expect_no_text "DROPPED-NODE" "$name"; expect_no_text "DROPPED-INNER" "$name"; expect_no_text "DROPPED-PLOT" "$name"
 			expect_text "KEPT-OVERLAY" "$name"; expect_text "KEPT-INLINE" "$name"; expect_text "KEPT-ICON" "$name" ;;
 		joby-draftpics)
 			expect_text "some-figure.pdf" "$name"; expect_text "TikZ picture" "$name"; expect_no_text "DROPPED-IN-FRAME" "$name" ;;
