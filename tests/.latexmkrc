@@ -4,7 +4,7 @@ $out_dir = "build";
 
 # Package directories. run-tests sets MSTEX_ROOT to an absolute path; in an editor it defaults to "..".
 my $root = $ENV{MSTEX_ROOT} // "..";
-$ENV{TEXINPUTS} = join(":", map { "$root/$_" } qw(beamerthemejoby draft-tools revision-number rbd-support)) . ":" . ($ENV{TEXINPUTS} // "");
+$ENV{TEXINPUTS} = join(":", map { "$root/$_" } qw(beamerthemejoby draft-tools revision-number rbd-support common)) . ":" . ($ENV{TEXINPUTS} // "");
 
 # glossaries: run makeglossaries when the .glo/.acn files change.
 add_cus_dep('glo', 'gls', 0, 'run_makeglossaries');

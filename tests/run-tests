@@ -216,6 +216,19 @@ PY
 		joby-titlepage-noinstitute)
 			expect_text "AUTHOR-WORD" "$name"; expect_text "DATE-WORD" "$name"; expect_no_text "Joby Aviation" "$name"
 			;;
+		common)
+			expect_text "FIRST-SLIDE" "$name"; expect_text "FULL-PAGE-WORD" "$name"; expect_text "SECOND-SLIDE" "$name"; expect_text "SECOND-ATTACHMENT-WORD" "$name"
+			[ "$(pdfinfo "build/$name.pdf" | awk '/Pages/{print $2}')" = 4 ] && pass "$name has two slides and two full pages" || fail "$name has two slides and two full pages"
+			size() { pdfinfo -f $1 -l $1 "build/$name.pdf" | awk -v p="$1" '$1=="Page" && $2==p {printf "%d %d\n", $4, $6; exit}'; }
+			[ "$(size 1)" = "$(size 3)" ] && [ "$(size 2)" != "$(size 1)" ] && [ "$(size 4)" != "$(size 1)" ] && pass "$name full pages have their own sizes ($(size 2); $(size 4)), the slides keep theirs ($(size 1))" || fail "$name full pages have their own sizes"
+			# Not a slide: no footer, and the slides are numbered 1 and 2 as if the full pages were not there.
+			pdftotext -f 2 -l 2 "build/$name.pdf" - | grep -q "JOBY AVIATION" && fail "$name full page has no footer" || pass "$name full page has no footer"
+			[ "$(pdftotext -f 1 -l 1 "build/$name.pdf" - | grep -E '^[0-9]+$' | tail -1)" = 1 ] && [ "$(pdftotext -f 3 -l 3 "build/$name.pdf" - | grep -E '^[0-9]+$' | tail -1)" = 2 ] && pass "$name full pages do not use up a slide number" || fail "$name full pages do not use up a slide number"
+			# Each page is an attachment: its heading, \cref reads "attachment N" and \Cref "Attachment N", and the labels point at their pages.
+			expect_text "Attachment 1" "$name"; expect_text "Attachment 2" "$name"
+			expect_text "See attachment 1 and Attachment 2, also 2." "$name"
+			pdfinfo -dests "build/$name.pdf" | grep -q '^ *2 .*"att:one"' && pdfinfo -dests "build/$name.pdf" | grep -q '^ *4 .*"att:two"' && pass "$name labels in a full page point at that page" || fail "$name labels in a full page point at that page"
+			;;
 		joby-toc)
 			p2=$(pdftotext -f 2 -l 2 "build/$name.pdf" -)
 			for n in i 1 3 6; do grep -qx "$n" <<<"$p2" && pass "$name outline page shows '$n'" || fail "$name outline page shows '$n'"; done ;;

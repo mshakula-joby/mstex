@@ -1,0 +1,20 @@
+% The fullpage environment: a page of its own size between two slides, not a slide; labels inside it resolve and
+% \cref reads "attachment N" and \Cref "Attachment N".
+\documentclass[aspectratio=169,10pt]{beamer}
+\usetheme{joby}
+\usepackage{tikz}
+\usepackage{cleveref}
+\usepackage{common}
+\title{Common}
+\author{Test Author}
+\begin{document}
+\begin{frame}{FIRST-SLIDE}First. See \cref{att:one} and \Cref{att:two}, also \ref{att:two}.\end{frame}
+\begin{fullpage}[10pt]
+	\begin{tikzpicture}\draw[fill=gray!30] (0,0) rectangle (20,12);\node at (10,6) {\Huge FULL-PAGE-WORD};\end{tikzpicture}
+	\label{att:one}
+\end{fullpage}
+\begin{frame}{SECOND-SLIDE}Second.\end{frame}
+\begin{fullpage}
+	\fbox{SECOND-ATTACHMENT-WORD}\label{att:two}
+\end{fullpage}
+\end{document}

@@ -1,0 +1,64 @@
+% common.sty
+%
+% Small helpers shared by the presentations.
+%
+%   \begin{fullpage}[<margin>] <content> \end{fullpage}
+%       Puts a page in the PDF that is not a slide: its size is the size of the content plus <margin> (default 0pt)
+%       on every side, whatever the slide size is, under a small "Attachment N" heading. It is shipped out
+%       directly, so it has no title bar, footer or slide number and does not use up a slide number; Beamer does
+%       not know about it (it is not in the outline or the navigation). Use it between frames, not inside one.
+%       Needs LuaLaTeX. The content must not contain verbatim material.
+%
+%       Each page is an attachment: \label inside it works, and with cleveref, \cref{<label>} reads
+%       "attachment N" and \Cref{<label>} "Attachment N" (load cleveref after the Beamer theme so that its
+%       links work), and \ref gives N.
+
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{common}[2026/10/18 Helpers shared by the presentations]
+
+\newcounter{attachment}
+\renewcommand{\theattachment}{\arabic{attachment}}
+
+\newbox\common@fullpagebox
+\newbox\common@headbox
+\newdimen\common@margin
+
+\newenvironment{fullpage}[1][0pt]{%
+	\ifdefined\pagewidth\else\PackageError{common}{fullpage needs LuaLaTeX}{Compile with lualatex.}\fi
+	\common@margin=\dimexpr#1\relax
+	\setbox\common@fullpagebox\hbox\bgroup
+	% The counter is stepped (with its anchor) inside the page, so a \label in the content refers to this page.
+	\refstepcounter{attachment}%
+	% Beamer puts the anchor of a \label outside a frame on the next frame; inside the page it belongs here.
+	\ifdefined\beamer@inframetrue\beamer@inframetrue\fi
+	\ignorespaces
+}{%
+	\egroup
+	\setbox\common@headbox\hbox{\normalfont\large\bfseries Attachment~\theattachment}%
+	\dimen@=\dimexpr\wd\common@fullpagebox+2\common@margin\relax
+	\dimen@ii=\dimexpr\ht\common@fullpagebox+\dp\common@fullpagebox
+		+\ht\common@headbox+\dp\common@headbox+\baselineskip+2\common@margin\relax
+	\begingroup
+		\pagewidth=\dimen@ \pageheight=\dimen@ii
+		% The page content starts at the page's corner: no offsets.
+		\hoffset=-1in \voffset=-1in
+		\shipout\vbox to \pageheight{%
+			\hsize=\pagewidth
+			\kern\common@margin
+			\moveright\common@margin\box\common@headbox
+			\kern\baselineskip
+			\moveright\common@margin\hbox{\unhcopy\common@fullpagebox}%
+			\vss}%
+	\endgroup
+	% The page counts as a page of the PDF, so page references and Beamer's page anchors stay consistent.
+	\stepcounter{page}%
+}
+
+% Cross-references to attachments: \cref reads "attachment N", \Cref "Attachment N" (cleveref, whenever it is loaded).
+\newcommand{\common@attachmentnames}{%
+	\crefname{attachment}{attachment}{attachments}%
+	\Crefname{attachment}{Attachment}{Attachments}%
+}
+\@ifpackageloaded{cleveref}{\common@attachmentnames}{\AddToHook{package/cleveref/after}{\common@attachmentnames}}
+
+\endinput
