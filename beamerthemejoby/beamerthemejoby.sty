@@ -246,6 +246,9 @@
 		columns=fullflexible,
 		keepspaces=true,
 	}%
+	% listings sets its captions itself, not through Beamer's caption templates, so give them Beamer's caption font.
+	\let\jobyorig@lstmakecaption\lst@makecaption
+	\long\def\lst@makecaption#1#2{{\usebeamerfont{caption}\jobyorig@lstmakecaption{#1}{#2}}}%
 }
 
 \endinput

@@ -333,6 +333,21 @@ assert covers("fig.", 1), "\\cref link does not cover 'fig. 1'"
 assert covers("Figure", 1), "\\Cref link does not cover 'Figure 1'"
 PY
 			;;
+		joby-captions)
+			pdftotext -bbox "build/$name.pdf" "build/$name.bbox.html"
+			python3 -I - "build/$name.bbox.html" <<'PY' && pass "$name captions and their labels are smaller than the body text" || fail "$name captions and their labels are smaller than the body text"
+import re, sys
+html = open(sys.argv[1]).read()
+words = [(w, float(d) - float(b)) for b, d, w in re.findall(r'yMin="([\d.]+)" xMax="[\d.]+" yMax="([\d.]+)">([^<]*)<', html)]
+def heights(word):
+    return [h for w, h in words if w.startswith(word)]
+body = max(heights("BODYTEXT"))
+for word in ["Figure", "FIGCAPTION", "Table", "TABCAPTION", "Listing", "LSTCAPTION"]:
+    found = heights(word)
+    assert found, "no word " + word
+    assert max(found) < 0.9 * body, "%s is %.1f high, the body text %.1f" % (word, max(found), body)
+PY
+			;;
 		joby-slideref)
 			# \label in a frame names the slide as the footer shows it; \ref prints the number, \cref "slide N".
 			expect_text "Refs: slide 2, Slide 3, 2, and slides 2 and 3." "$name"

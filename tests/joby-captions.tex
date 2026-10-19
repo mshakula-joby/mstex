@@ -1,0 +1,28 @@
+% Captions of figures, tables and listings, with their labels, are footnotesize: smaller than the body text.
+\documentclass[aspectratio=169,10pt]{beamer}
+\usetheme{joby}
+\usepackage{listings}
+\title{Captions}
+\author{Test Author}
+\begin{document}
+\begin{frame}{One}
+	BODYTEXT
+	\begin{figure}
+		\rule{2cm}{1cm}
+		\caption{FIGCAPTION}
+	\end{figure}
+\end{frame}
+\begin{frame}{Two}
+	BODYTEXT
+	\begin{table}
+		\begin{tabular}{ll} a & b \\ \end{tabular}
+		\caption{TABCAPTION}
+	\end{table}
+\end{frame}
+\begin{frame}[fragile]{Three}
+	BODYTEXT
+	\begin{lstlisting}[caption={LSTCAPTION}]
+int x = 0;
+	\end{lstlisting}
+\end{frame}
+\end{document}
