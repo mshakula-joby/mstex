@@ -66,13 +66,39 @@
 % The ticket is an acronym of the Jira glossary: the id is the short form and the title the long form, both
 % plain, so \acrshort, \acrlong and \acrfull print them without formatting.
 % The entry keeps the ticket id in user1 and the (optional) pull request numbers in user2.
-\NewDocumentCommand{\addjirainfo}{ o m m }{%
-	\IfNoValueTF{#1}{%
-		\newacronym[type=jira, sort={#2}, user1={#2}, user2={}]{#2}{#2}{#3}%
-	}{%
-		\newacronym[type=jira, sort={#2}, user1={#2}, user2={#1}]{#2}{#2}{#3}%
-	}%
-}
+% The sort key is the id with its number zero-padded, so tickets sort by number (S4TC-999 before S4TC-10000)
+% instead of character by character.
+\ExplSyntaxOn
+\seq_new:N \l__jirasupport_parts_seq
+\tl_new:N \l__jirasupport_sort_tl
+\cs_new_protected:Npn \__jirasupport_set_sort:n #1
+  {
+    \regex_extract_once:nnNTF { \A (.*-) (\d+) \Z } {#1} \l__jirasupport_parts_seq
+      {
+        \tl_set:Nx \l__jirasupport_sort_tl
+          {
+            \seq_item:Nn \l__jirasupport_parts_seq {2}
+            \prg_replicate:nn { 12 - \str_count:e { \seq_item:Nn \l__jirasupport_parts_seq {3} } } { 0 }
+            \seq_item:Nn \l__jirasupport_parts_seq {3}
+          }
+      }
+      { \tl_set:Nn \l__jirasupport_sort_tl {#1} }
+  }
+\tl_new:N \l__jirasupport_prs_tl
+\cs_new_protected:Npn \__jirasupport_new:nnnn #1 #2 #3 #4
+  {
+    \newacronym [ type = jira , sort = {#1} , user1 = {#2} , user2 = {#3} ] {#2} {#2} {#4}
+  }
+\cs_generate_variant:Nn \__jirasupport_new:nnnn { VnVn }
+\NewDocumentCommand{\addjirainfo}{ o m m }
+  {
+    \__jirasupport_set_sort:n {#2}
+    \IfNoValueTF {#1}
+      { \tl_clear:N \l__jirasupport_prs_tl }
+      { \tl_set:Nn \l__jirasupport_prs_tl {#1} }
+    \__jirasupport_new:VnVn \l__jirasupport_sort_tl {#2} \l__jirasupport_prs_tl {#3}
+  }
+\ExplSyntaxOff
 
 % --- The glossary table ----------------------------------------------------------------------------------
 % One row per ticket: id, description, and the Jira and GitHub links. Rows are paragraphs, so the table can

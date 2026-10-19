@@ -10,6 +10,8 @@
 \addjirainfo[7]{S4TC-1002}{THIRD-DESCRIPTION with one pull request}
 \addjirainfo[5]{S4TC-1004}{FOURTH-DESCRIPTION used through gls}
 \addjirainfo[9]{S4TC-1003}{UNREFERENCED-DESCRIPTION is never cited}
+\addjirainfo{S4TC-10000}{FIFTH-DESCRIPTION has more digits}
+\addjirainfo{S4TC-999}{SIXTH-DESCRIPTION has fewer digits}
 \newacronym{xx}{XX}{OTHER-ACRONYM-LONG}
 \title{Support}
 \author{Test Author}
@@ -31,6 +33,9 @@
 \end{frame}
 \begin{frame}{Full}
 	Full: \acrfull{S4TC-1002}.
+\end{frame}
+\begin{frame}{Numeric sort}
+	Cites \acrshort{S4TC-10000} and \acrshort{S4TC-999}.
 \end{frame}
 \begin{frame}[allowframebreaks]{Tickets}
 	\printjiraglossary

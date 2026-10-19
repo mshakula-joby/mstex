@@ -149,6 +149,9 @@ PY
 			for u in 42 43 7; do expect_text "https://git.example.com/pull/$u" "$name"; done
 			# One GitHub line per pull request: two for S4TC-1001, one each for S4TC-1002 and S4TC-1004, none for S4TC-1000.
 			[ "$(pdftotext "build/$name.pdf" - | grep -c "^GitHub:")" = 4 ] && pass "$name has one GitHub line per pull request" || fail "$name has one GitHub line per pull request"
+			# The glossary is in numeric id order (999, 1000, 1001, 1002, 1004, 10000), not character by character.
+			order=$(pdftotext "build/$name.pdf" - | grep -o "SIXTH-DESCRIPTION\|FIRST-DESCRIPTION\|SECOND-DESCRIPTION\|THIRD-DESCRIPTION\|FOURTH-DESCRIPTION\|FIFTH-DESCRIPTION" | tail -6 | tr '\n' ' ')
+			[ "$order" = "SIXTH-DESCRIPTION FIRST-DESCRIPTION SECOND-DESCRIPTION THIRD-DESCRIPTION FOURTH-DESCRIPTION FIFTH-DESCRIPTION " ] && pass "$name sorts tickets by numeric id" || fail "$name sorts tickets by numeric id (got: $order)"
 			expect_text "Cites S4TC-1000 and S4TC-1001 in the text, and S4TC-1002." "$name"
 			expect_text "First: S4TC-1004 (FOURTH-DESCRIPTION used through gls). Again: S4TC-1004." "$name"
 			expect_text "Short: S4TC-1002." "$name"; expect_text "Long: THIRD-DESCRIPTION with one pull request." "$name"
