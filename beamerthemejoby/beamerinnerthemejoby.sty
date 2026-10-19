@@ -215,4 +215,29 @@
 \renewcommand{\listoffigures}{\@starttoc{lof}}
 \renewcommand{\listoftables}{\@starttoc{lot}}
 
+% --- Height of a frame's content ---------------------------------------------------------------------
+% \jobyframeheight is the height available to the content of the current frame: the text height without the title
+% banner and the footer. Beamer computes it (\beamer@frametextheight) only when the frame ends, so it is recorded
+% in the .aux file and read back on the next pass; until then (the first run, or a frame the previous run did not
+% have) it is \textheight-2\baselineskip. It expands to a dimension expression, so it fits pgfmath and \dimexpr:
+% height={\jobyframeheight - 2cm}. Frames are counted as Beamer starts them, in the same order on every pass.
+\newcounter{jobyframeid}
+\newcommand{\jobyframeheightrecord}[2]{\global\@namedef{jobyframeh@#1}{#2}}
+\newcommand{\jobyframeheight}{%
+	\ifcsname jobyframeh@\the\c@jobyframeid\endcsname
+		\csname jobyframeh@\the\c@jobyframeid\endcsname
+	\else
+		\textheight-2\baselineskip
+	\fi
+}
+\newcommand{\jobyrecordframeheight}{%
+	\protected@write\@auxout{}{\string\jobyframeheightrecord{\the\c@jobyframeid}{\the\beamer@frametextheight}}%
+}
+\pretocmd{\beamer@@@@frame}{\stepcounter{jobyframeid}}{}{%
+	\PackageWarning{beamerinnerthemejoby}{Could not patch \string\beamer@@@@frame; \string\jobyframeheight is not available}}
+\patchcmd{\endbeamer@frameslide}
+	{\advance\beamer@frametextheight by-\beamer@frametopskip}
+	{\advance\beamer@frametextheight by-\beamer@frametopskip\relax\jobyrecordframeheight}{}{%
+	\PackageWarning{beamerinnerthemejoby}{Could not patch the end of a frame; \string\jobyframeheight is not available}}
+
 \endinput

@@ -1,0 +1,22 @@
+% \jobyframeheight is the content height of the frame (without the title banner and the footer), known from the
+% second pass on: shorter for a two-line title, taller for a plain frame.
+\documentclass[aspectratio=169,9pt]{beamer}
+\usetheme{joby}
+\title{Frame heights}
+\author{Test Author}
+\begin{document}
+\begin{frame}{One line}
+	\texttt{H1=\the\dimexpr\jobyframeheight\relax}
+\end{frame}
+\begin{frame}{A much longer frame title that will wrap onto a second line because it is far too long for one line}
+	\texttt{H2=\the\dimexpr\jobyframeheight\relax}
+\end{frame}
+\begin{frame}[plain]
+	\texttt{H3=\the\dimexpr\jobyframeheight\relax}
+\end{frame}
+\begin{frame}[allowframebreaks]{Breaks}
+	\texttt{H4=\the\dimexpr\jobyframeheight\relax}
+	\framebreak
+	Second page.
+\end{frame}
+\end{document}
