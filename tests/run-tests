@@ -220,7 +220,7 @@ PY
 			expect_text "AUTHOR-WORD" "$name"; expect_text "DATE-WORD" "$name"; expect_no_text "Joby Aviation" "$name"
 			;;
 		common-code-fallback)
-			# The pills are 15% light gray (black!20, CCCCCC) mixed into the slide background, here lighter than it.
+			# The pills are 25% mid gray (black!35, A6A6A6) mixed into the slide background, here lighter than it.
 			pdftoppm -r 100 -f 1 -l 1 -png "build/$name.pdf" "build/$name-img"
 			python3 -I - build/$name-img-*.png <<'PY' && pass "$name pills mix light gray into the theme background" || fail "$name pills mix light gray into the theme background"
 import sys
@@ -228,7 +228,7 @@ from PIL import Image
 im = Image.open(sys.argv[1]).convert("RGB")
 w, h = im.size
 bg = im.getpixel((3, h // 2))
-code = tuple(round(0.15 * 0xCC + 0.85 * c) for c in bg)
+code = tuple(round(0.25 * 0xA6 + 0.75 * c) for c in bg)
 n = sum(1 for p in im.getdata() if sum(abs(a - b) for a, b in zip(p, code)) < 4)
 sys.exit(0 if sum(code) > sum(bg) and n > 1000 else 1)
 PY
@@ -248,20 +248,49 @@ first = [float(y) for y, w in words if "CInput" in w]
 last = [float(y) for y, w in words if "Something()" in w]
 sys.exit(0 if first and last and last[0] > first[0] + 5 else 1)
 PY
-			# The pills are on the code background: 15% Joby Gray (CDD0D1) in Joby Off-White (F5F4DF), the alternate
+			# The pills are on the code background: 25% Joby Dark Gray (A8ACAD) in Joby Off-White (F5F4DF), the alternate
 			# background of the default palette.
 			pdftoppm -r 100 -f $pg -l $pg -png "build/$name.pdf" "build/$name-pill"
 			python3 -I - build/$name-pill-*.png <<'PY' && pass "$name code is on code background pills" || fail "$name code is on code background pills"
 import sys
 from PIL import Image
 im = Image.open(sys.argv[1]).convert("RGB")
-code = tuple(round(0.15 * g + 0.85 * w) for g, w in zip((0xCD, 0xD0, 0xD1), (0xF5, 0xF4, 0xDF)))
+code = tuple(round(0.25 * g + 0.75 * w) for g, w in zip((0xA8, 0xAC, 0xAD), (0xF5, 0xF4, 0xDF)))
 n = sum(1 for p in im.getdata() if sum(abs(a - b) for a, b in zip(p, code)) < 4)
 sys.exit(0 if n > 2000 else 1)
 PY
+			# The pill hugs the ink: beside CMessage::Send(), the first pill, the background shows at most 0.2em on
+			# either side (the right side bearing of ")" is taken off), and about as much on both.
+			pdftoppm -r 200 -f $pg -l $pg -png "build/$name.pdf" "build/$name-tight"
+			python3 -I - build/$name-tight-*.png <<'PY' && pass "$name pills hug the ink" || fail "$name pills hug the ink"
+import sys
+from PIL import Image
+im = Image.open(sys.argv[1]).convert("RGB")
+w, h = im.size
+code = tuple(round(0.25 * g + 0.75 * c) for g, c in zip((0xA8, 0xAC, 0xAD), (0xF5, 0xF4, 0xDF)))
+is_pill = lambda p: sum(abs(a - b) for a, b in zip(p, code)) < 6
+is_ink = lambda p: sum(p) < 300
+rows = [y for y in range(h) if any(is_pill(im.getpixel((x, y))) for x in range(0, w, 2))]
+band = [y for y in rows if y - rows[0] < 40]  # the first line of pills
+cols = sorted({x for y in band for x in range(w) if is_pill(im.getpixel((x, y))) or is_ink(im.getpixel((x, y)))})
+# Split into clusters at gaps; the first one with pill pixels is the first pill.
+clusters, cur = [], [cols[0]]
+for x in cols[1:]:
+    if x - cur[-1] > 3: clusters.append(cur); cur = [x]
+    else: cur.append(x)
+clusters.append(cur)
+for c in clusters:
+    pill = [x for x in c for y in band if is_pill(im.getpixel((x, y)))]
+    if pill: break
+ink = [x for x in c for y in band if is_ink(im.getpixel((x, y)))]
+left, right = min(ink) - min(pill), max(pill) - max(ink)
+em = 9 / 72.27 * 200
+print("    gaps %d and %d px (em %.1f px)" % (left, right, em))
+sys.exit(0 if 0 < left <= 0.2 * em and 0 < right <= 0.2 * em and abs(left - right) <= 2 else 1)
+PY
 			;;
 		joby-listings-after)
-			# Orange palette: the block is on the code background (15% Joby Gray in Joby Off-White), framed in the
+			# Orange palette: the block is on the code background (25% Joby Dark Gray in Joby Off-White), framed in the
 			# accent color (Joby Yellow, FFB300).
 			pdftoppm -r 100 -f 1 -l 1 -png "build/$name.pdf" "build/$name-img"
 			python3 -I - build/$name-img-*.png <<'PY' && pass "$name block is on the code background with an accent frame" || fail "$name block is on the code background with an accent frame"
@@ -269,7 +298,7 @@ import sys
 from PIL import Image
 px = list(Image.open(sys.argv[1]).convert("RGB").getdata())
 near = lambda c, t: sum(1 for p in px if sum(abs(a - b) for a, b in zip(p, c)) < t)
-code = tuple(round(0.15 * g + 0.85 * w) for g, w in zip((0xCD, 0xD0, 0xD1), (0xF5, 0xF4, 0xDF)))
+code = tuple(round(0.25 * g + 0.75 * w) for g, w in zip((0xA8, 0xAC, 0xAD), (0xF5, 0xF4, 0xDF)))
 sys.exit(0 if near(code, 4) > 5000 and near((0xFF, 0xB3, 0x00), 60) > 200 else 1)
 PY
 			;;
