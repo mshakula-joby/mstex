@@ -354,6 +354,60 @@ PY
 			grep -qxE "[123]" <<<"$t" && fail "$name line numbers are not in the text" || pass "$name line numbers are not in the text"
 			grep -qx "71" <<<"$t" && pass "$name copynumbers=true keeps them" || fail "$name copynumbers=true keeps them"
 			;;
+		betterlistings-joint)
+			# Find the rule at 600 dpi (the second run of accent rows in the middle of the box, after the header's top
+			# edge; the title bar above is green), then look at the joint at several resolutions near 2400 dpi, so
+			# that it falls differently on the pixel grid (a flaw may show at some alignments only).
+			pdftoppm -r 600 -f 1 -l 1 -png "build/$name.pdf" "build/$name-find"
+			read x0 y0 w0 < <(python3 -I - build/$name-find-*.png <<'PY'
+import sys
+from PIL import Image
+im = Image.open(sys.argv[1]).convert("RGB")
+w, h = im.size
+blue = lambda p: p[2] > 180 and p[2] - p[0] > 100
+rows = [y for y in range(int(h * 0.15), h) if blue(im.getpixel((w // 2, y)))]
+runs, cur = [], [rows[0]]
+for y in rows[1:]:
+    if y - cur[-1] > 1: runs.append(cur); cur = [y]
+    else: cur.append(y)
+runs.append(cur)
+rule = runs[1][0]
+left = next(x for x in range(w) if blue(im.getpixel((x, rule))))
+print(left, rule, w - left)
+PY
+)
+			ok=1
+			for r in 2400 2413 2427 2441 2455 2469 2483 2497; do
+				pdftoppm -r $r -f 1 -l 1 -x $((x0 * r / 600 - 40)) -y $((y0 * r / 600 - 40)) -W $((w0 * r / 600)) -H 110 \
+					-png "build/$name.pdf" "build/$name-joint-$r"
+				python3 -I - build/$name-joint-$r-*.png <<'PY' || { echo "    at $r dpi"; ok=; }
+import sys
+from PIL import Image
+im = Image.open(sys.argv[1]).convert("RGB")
+w, h = im.size
+slide = im.getpixel((2, h - 2))
+diff = lambda a, b: sum(abs(x - y) for x, y in zip(a, b))
+left = next(x for x in range(w) if diff(im.getpixel((x, h - 2)), slide) > 6)
+col = [im.getpixel(((left + w) // 2, y)) for y in range(h)]
+runs, cur = [], [0]
+for y in range(1, h):
+    if diff(col[y], col[cur[-1]]) <= 3: cur.append(y)
+    else: runs.append(cur); cur = [y]
+runs.append(cur)
+rule = [r for r in runs if diff(col[r[0]], col[0]) > 20 and diff(col[r[0]], col[-1]) > 20 and len(r) >= 5][0]
+accent = [y for y in range(h) if diff(col[y], col[rule[0]]) <= 3]
+assert accent == list(range(accent[0], accent[-1] + 1)), "the rule is broken: %s" % accent
+below = col[accent[-1] + 1:]
+for c in range(3):
+    seq = [p[c] for p in below]
+    steps = [b - a for a, b in zip(seq, seq[1:]) if abs(b - a) > 1]
+    assert all(s > 0 for s in steps) or all(s < 0 for s in steps), "the shadow does not fade evenly"
+for y in range(accent[-1] + 1, accent[-1] + 30):
+    assert diff(im.getpixel((left + 2, y)), im.getpixel((left + 40, y))) <= 12, "the side edge differs at %d" % y
+PY
+			done
+			[ -n "$ok" ] && pass "$name the rule, shadow and side edge meet cleanly" || fail "$name the rule, shadow and side edge meet cleanly"
+			;;
 		betterlistings-cleveref)
 			# The build finishes (no loop); \cref names the listing.
 			expect_text "CLEVEREF_CODE" "$name"; expect_text "See listing 1." "$name"

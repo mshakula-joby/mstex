@@ -636,8 +636,12 @@
 			path picture={\fill[code frame, sharp corners] (frame.south west |- interior.north) rectangle (frame.north east);},
 		},
 		overlay unbroken and first={%
+			% (The shadow starts inside the rule, under the rule drawn again over it and a hair below, so that the
+			% body's light edge is covered and no seam shows between the rule and the shadow in any viewer.)
 			\shade[top color=code shadow, bottom color=code background]
-				(frame.west |- interior.north) rectangle ([yshift=-0.4ex]frame.east |- interior.north);
+				([yshift=0.15pt]frame.west |- interior.north) rectangle ([yshift=-0.4ex]frame.east |- interior.north);
+			\fill[code frame]
+				([yshift=-0.05pt]frame.west |- interior.north) rectangle (frame.east |- title.south);
 		},
 	},
 }

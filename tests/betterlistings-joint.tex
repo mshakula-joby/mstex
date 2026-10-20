@@ -1,0 +1,13 @@
+% betterlistings: where the header's rule meets the shadow (green palette, accent Joby Blue) nothing else shows at
+% high zoom: the rule is one unbroken run of the accent, the shadow fades from it evenly (no lighter or darker
+% line), and the box's side edge carries the shadow too.
+\documentclass[aspectratio=169,10pt]{beamer}
+\usetheme[palette=green]{joby}
+\lstset{style=betterlisting}
+\begin{document}
+\begin{frame}[fragile]{Joint}
+	\begin{lstlisting}[file=src/JOINT.cpp]
+int main() { return 0; }
+	\end{lstlisting}
+\end{frame}
+\end{document}
