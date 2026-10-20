@@ -1,5 +1,8 @@
-% \code (common): inline code on an accent pill that may break across lines, at its capitals, after :: and _, and
-% at spaces, without a hyphen. It is also used in a section title (PDF bookmark) and with draftpics.
+% \code (common): inline code on a pill that may break across lines, at its capitals, after :: and _, and at
+% spaces, without a hyphen. Its text is literal, read as an argument (a frame without [fragile]) and read
+% directly (a [fragile] frame, where % is literal too). The pills do not cover the ink of their glyphs (each word of
+% the same red text is as wide in \code as in \texttt). It is also used in a section title (PDF bookmark) and with
+% draftpics.
 \documentclass[aspectratio=43,9pt]{beamer}
 \usetheme{joby}
 \usepackage{common}
@@ -9,8 +12,21 @@
 \begin{document}
 \section{About \code{CSectionName}}
 \begin{frame}{Code}
-	Short \code{CMessage::Send()} and words \code{some\_name and more}, \code{bare_under_score}.
+	Short \code{CMessage::Send()} and words \code{some_name and more}.
 
 	\parbox{0.4\linewidth}{Long \code{CInputSignalManagementTelemetryBase::DoSomething()}}
+\end{frame}
+\begin{frame}{Literal}
+	LIT \code{f(a){b}} \code{arr[i][j]} \code{user@host} \code{cost$5} \code{a&b} \code{x^2} \code{a~b}
+	\code{\textbf{x}} \code{some\_name} \code{\a\b c}
+\end{frame}
+\begin{frame}[fragile]{Literal read directly}
+	DIRECT \code{50% #define \x{y}}
+\end{frame}
+\begin{frame}{Ink}
+	\colorlet{code text}{red}
+	\code{thm mmm}
+
+	\textcolor{red}{\texttt{thm mmm}}
 \end{frame}
 \end{document}

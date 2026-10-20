@@ -19,9 +19,12 @@
 %       background (the Joby theme does, for listings too); otherwise it is a quarter mid gray mixed into the
 %       alternate background colorAltBG, or when there is none into the theme's background (Beamer's normal text
 %       background), or into white, which darkens a light background and lightens a dark one.
-%       The line may break at a space, where a lower case letter or digit is followed by a capital, and after \_,
-%       _ or ::, without a hyphen; the pill is then closed at the end of the line and opened again on the next one. An underscore needs no escaping (\code{some_name}; \_
-%       works too); other special characters are escaped as in \texttt.
+%       The line may break at a space, where a lower case letter or digit is followed by a capital, and after _ or
+%       ::, without a hyphen; the pill is then closed at the end of the line and opened again on the next one.
+%       The code is literal: every character prints as it is, \, {, }, $, &, #, ^, _ and ~ included, and commands
+%       are not run (\code{\textbf{x}} prints \textbf{x}). Braces must balance. % is literal too, except where
+%       \code is in the argument of another command (a frame without [fragile], a glossary title): there TeX has
+%       already read the text, and % starts a comment.
 
 \NeedsTeXFormat{LaTeX2e}
 \ProvidesPackage{common}[2026/10/18 Helpers shared by the presentations]
@@ -79,6 +82,8 @@
 % there is a \discretionary: if the line breaks there, the pre-break text closes the pill (right cap) and the
 % post-break text opens it again (left cap); if not, it is background over the two side bearings, and over the
 % space between two words. Neighboring pieces overlap by \c__common_code_overlap_dim, so that no hairline shows.
+% What is drawn after a glyph (the right cap, the background after a chunk) starts \c__common_code_clear_dim past
+% its ink, or at the end of its box if that is nearer, so that it does not paint over the glyph's edge.
 \RequirePackage{tikz}
 % (Found like a TeX file: Lua's module path need not include TEXINPUTS.)
 \ifdefined\directlua\directlua{local f = kpse.find_file("common-code.lua") if f then dofile(f) end}\fi
@@ -101,6 +106,7 @@
 \dim_new:N \l__common_code_dp_dim
 \dim_new:N \l__common_code_r_dim
 \dim_const:Nn \c__common_code_overlap_dim { 0.2pt }
+\dim_const:Nn \c__common_code_clear_dim { 0.15pt }
 \box_new:N \l__common_code_box
 \tl_new:N \l__common_code_tl
 \tl_new:N \l__common_code_left_tl
@@ -128,7 +134,7 @@
   }
   { \cs_new:Npn \__common_code_bearing:n #1 { 0pt } }
 % The rounded ends: a quarter circle above and below, of radius \l__common_code_r_dim, on the pill's height. The
-% fill reaches into the neighboring chunk; the bounding box is the cap alone.
+% left cap's fill reaches into the chunk after it (which is drawn over it); the bounding box is the cap alone.
 \cs_new_protected:Npn \__common_code_cap:n #1
   {
     \tikz [ baseline = 0pt ]
@@ -145,12 +151,10 @@
                 -- (\l__common_code_r_dim + \c__common_code_overlap_dim, -\l__common_code_dp_dim)
             }
             {
-              (-\c__common_code_overlap_dim, \l__common_code_ht_dim)
-                -- (0pt, \l__common_code_ht_dim)
+              (0pt, \l__common_code_ht_dim)
                 arc [ start~angle = 90, end~angle = 0, radius = \l__common_code_r_dim ]
                 -- (\l__common_code_r_dim, -\l__common_code_dp_dim + \l__common_code_r_dim)
                 arc [ start~angle = 0, end~angle = -90, radius = \l__common_code_r_dim ]
-                -- (-\c__common_code_overlap_dim, -\l__common_code_dp_dim)
             }
           -- cycle ;
       }
@@ -182,6 +186,7 @@
       }
   }
 % Between a chunk with right side bearing #1 and one with left side bearing #3; #2 is s between two words.
+% (#1 is the bearing less the clearance, see \__common_code_after:n.)
 \cs_new_protected:Npn \__common_code_break:nnn #1#2#3
   {
     \tex_discretionary:D
@@ -197,13 +202,16 @@
           }
       }
   }
+% How far back from the end of a chunk with right side bearing #1 the things after it start.
+\cs_new:Npn \__common_code_after:n #1
+  { \dim_eval:n { #1 - \dim_min:nn { #1 } { \c__common_code_clear_dim } } }
 \cs_generate_variant:Nn \__common_code_break:nnn { eee }
 % Adds the chunks of the word #1 to the list, with c after each and s after the last.
 \cs_new_protected:Npn \__common_code_split:n #1
   {
     \tl_set:Nn \l__common_code_tl {#1}
     \regex_replace_all:nnN { ([a-z0-9])([A-Z]) } { \1 \c{__common_code_sep:} \2 } \l__common_code_tl
-    \regex_replace_all:nnN { (\c{_}|_|::) } { \1 \c{__common_code_sep:} } \l__common_code_tl
+    \regex_replace_all:nnN { (_|::) } { \1 \c{__common_code_sep:} } \l__common_code_tl
     \seq_set_split:NnV \l__common_code_word_seq { \__common_code_sep: } \l__common_code_tl
     \seq_remove_all:Nn \l__common_code_word_seq { }
     \seq_map_inline:Nn \l__common_code_word_seq
@@ -217,19 +225,40 @@
         \seq_put_right:Nn \l__common_code_seps_seq { s }
       }
   }
-\NewDocumentCommand \code { m }
+% \code reads its argument with the special characters made printable (except the braces, which delimit it), so
+% that it is literal where it has not been read yet. Where it has (in an argument), it is turned into a string:
+% the characters are then printable all the same, but control words come with a space after them, which is taken
+% out again unless a letter follows (a space after a control word was not typed, or TeX would have dropped it).
+\NewDocumentCommand \code { }
   {
     \mode_leave_vertical:
     \group_begin:
+      \clist_map_inline:nn { 92, 36, 38, 35, 94, 95, 37, 126 } { \char_set_catcode_other:n {##1} }
+      \__common_code_read:n
+  }
+\cs_new_protected:Npn \__common_code_read:n #1
+  {
+    \group_end:
+    \__common_code:n {#1}
+  }
+\cs_new_protected:Npn \__common_code_unspace:
+  {
+    \regex_replace_all:nnNT { (\\[A-Za-z@]+)\ ([^A-Za-z@]) } { \1\2 } \l__common_code_tl
+      { \__common_code_unspace: }
+  }
+\cs_new_protected:Npn \__common_code:n #1
+  {
+    \group_begin:
+      \tl_set:Nn \l__common_code_tl {#1}
+      \regex_replace_all:nnN { \cP\# } { \cO\# } \l__common_code_tl
+      \tl_set:Ne \l__common_code_tl { \tl_to_str:N \l__common_code_tl }
+      \__common_code_unspace:
       \ttfamily
       \@ifundefinedcolor { code~text } { } { \color { code~text } }
       % The pill is as tall as a parenthesis, the tallest and deepest common glyph, plus a little.
-      \dim_set:Nn \l__common_code_ht_dim { \fontcharht \font `( + 0.05em }
-      \dim_set:Nn \l__common_code_dp_dim { \fontchardp \font `( + 0.05em }
+      \dim_set:Nn \l__common_code_ht_dim { \fontcharht \font `( + 0.1em }
+      \dim_set:Nn \l__common_code_dp_dim { \fontchardp \font `( + 0.1em }
       \dim_set:Nn \l__common_code_r_dim { 0.12em }
-      % A bare _ (a subscript character) becomes a printable one.
-      \tl_set:Nn \l__common_code_tl {#1}
-      \regex_replace_all:nnN { \cD\_ } { \cO\_ } \l__common_code_tl
       \seq_set_split:NnV \l__common_code_words_seq { ~ } \l__common_code_tl
       \seq_remove_all:Nn \l__common_code_words_seq { }
       \seq_clear:N \l__common_code_chunks_seq
@@ -259,9 +288,13 @@
               \tl_set:Ne \l__common_code_next_tl { \seq_item:Nn \l__common_code_left_seq { ##1 + 1 } }
               \tl_set:Ne \l__common_code_tl { \seq_item:Nn \l__common_code_seps_seq {##1} }
               \__common_code_break:eee
-                { \l__common_code_right_tl } { \l__common_code_tl } { \l__common_code_next_tl }
+                { \__common_code_after:n { \l__common_code_right_tl } }
+                { \l__common_code_tl } { \l__common_code_next_tl }
             }
-            { \tex_kern:D - \l__common_code_right_tl \scan_stop: \__common_code_cap:n { right } }
+            {
+              \tex_kern:D - \__common_code_after:n { \l__common_code_right_tl } \scan_stop:
+              \__common_code_cap:n { right }
+            }
         }
     \group_end:
   }

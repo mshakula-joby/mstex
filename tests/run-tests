@@ -238,7 +238,38 @@ PY
 			grep -q 'Token not allowed' "build/$name.log" && fail "$name code in a section title makes a clean bookmark" || pass "$name code in a section title makes a clean bookmark"
 			# Broken without a hyphen: the pieces are all there, and the long name continues on the next line.
 			pdftotext "build/$name.pdf" - | tr -d '\n' | grep -q "CInputSignalManagementTelemetryBase::DoSomething()" && pass "$name the long name is kept whole (no hyphen)" || fail "$name the long name is kept whole (no hyphen)"
-			expect_text "some_name and more" "$name"; expect_text "bare_under_score" "$name"
+			expect_text "some_name and more" "$name"
+			# Literal text, read as an argument and (in a [fragile] frame) directly.
+			for t in 'f(a){b}' 'arr[i][j]' 'user@host' 'cost$5' 'a&b' 'x^2' 'a~b' '\textbf{x}' 'some\_name' '\a\b c' '50% #define \x{y}'; do
+				expect_text "$t" "$name"
+			done
+			# The pills do not paint over the ink: each word of the same red text is as wide in \code as in \texttt.
+			pi=$(for p in 1 2 3 4 5 6; do pdftotext -f $p -l $p "build/$name.pdf" - | grep -q "^Ink" && echo $p && break; done)
+			pdftoppm -r 300 -f $pi -l $pi -png "build/$name.pdf" "build/$name-ink"
+			python3 -I - build/$name-ink-*.png <<'PY' && pass "$name pills leave the ink whole" || fail "$name pills leave the ink whole"
+import sys
+from PIL import Image
+im = Image.open(sys.argv[1]).convert("RGB")
+w, h = im.size
+red = lambda p: p[0] - max(p[1], p[2]) > 120
+rows = [y for y in range(h) if any(red(im.getpixel((x, y))) for x in range(0, w, 2))]
+lines, cur = [], [rows[0]]
+for y in rows[1:]:
+    if y - cur[-1] > 5: lines.append(cur); cur = [y]
+    else: cur.append(y)
+lines.append(cur)
+def words(ys):
+    cols = [x for x in range(w) if any(red(im.getpixel((x, y))) for y in range(ys[0], ys[-1] + 1))]
+    out, cur = [], [cols[0]]
+    for x in cols[1:]:
+        if x - cur[-1] > 8: out.append(cur); cur = [x]
+        else: cur.append(x)
+    out.append(cur)
+    return [c[-1] - c[0] for c in out]
+code, plain = words(lines[0]), words(lines[1])
+print("    red ink widths %s in code, %s in texttt" % (code, plain))
+sys.exit(0 if len(code) == len(plain) and all(abs(a - b) <= 1 for a, b in zip(code, plain)) else 1)
+PY
 			pg=$(for p in 1 2 3; do pdftotext -f $p -l $p "build/$name.pdf" - | grep -q "^Short" && echo $p && break; done)
 			pdftotext -f $pg -l $pg -bbox "build/$name.pdf" "build/$name.bbox.html"
 			python3 -I - "build/$name.bbox.html" <<'PY' && pass "$name the long name wraps onto the next line" || fail "$name the long name wraps onto the next line"
