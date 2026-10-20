@@ -277,6 +277,14 @@ PY
 			expect_no_text "DROPPED-PICTURE" "$name"; expect_text "TikZ picture" "$name"
 			;;
 		betterlistings-plain)
+			# The theme's size for plain listings: SIZEWORD is as tall in the listing as in {\scriptsize SIZEWORD}.
+			pdftotext -f 1 -l 1 -bbox "build/$name.pdf" "build/$name.bbox.html"
+			python3 -I - "build/$name.bbox.html" <<'PY' && pass "$name plain listings are scriptsize" || fail "$name plain listings are scriptsize"
+import re, sys
+h = [float(b) - float(a) for a, b in re.findall(r'yMin="([\d.]+)" xMax="[\d.]+" yMax="([\d.]+)">SIZEWORD<', open(sys.argv[1]).read())]
+print("    SIZEWORD heights %s" % h)
+sys.exit(0 if len(h) == 2 and abs(h[0] - h[1]) < 0.2 else 1)
+PY
 			# No box, header or line numbers: no code background, no language name, no line number 1.
 			expect_text "PLAIN_CODE" "$name"; expect_no_text "C++" "$name"
 			pdftotext -f 1 -l 1 "build/$name.pdf" - | grep -qx "2" && fail "$name has no line numbers" || pass "$name has no line numbers"

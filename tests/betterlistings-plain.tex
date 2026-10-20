@@ -1,5 +1,6 @@
 % betterlistings is opt-in: a listing without the betterlisting style is a plain listing (no box, no header, no
-% line numbers), also with the Joby theme, which loads the package.
+% line numbers), also with the Joby theme, which loads the package and makes plain listings \scriptsize (as tall
+% as {\scriptsize SIZEWORD} after them).
 \documentclass[aspectratio=169,10pt]{beamer}
 \usetheme{joby}
 \begin{document}
@@ -8,5 +9,9 @@
 int PLAIN_CODE = 0;
 	\end{lstlisting}
 	\lstinputlisting[lastline=2]{fragments/split-100.cpp}
+	\begin{lstlisting}
+SIZEWORD
+	\end{lstlisting}
+	{\scriptsize SIZEWORD}
 \end{frame}
 \end{document}

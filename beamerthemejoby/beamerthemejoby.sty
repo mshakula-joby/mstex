@@ -235,10 +235,12 @@
 	\Crefname{framenumber}{Slide}{Slides}%
 }
 
-% Code: betterlistings (its listings style is opt-in) and minted; code blocks in the style are \tiny.
+% Code: betterlistings (its listings style is opt-in) and minted. Listings are \scriptsize, and blocks in the
+% betterlisting style \tiny (the style sets its own font and size).
 % listings sets its captions itself, not through Beamer's caption templates, so give them Beamer's caption font
 % (betterlistings' blocks have Beamer's captions).
 \RequirePackage{betterlistings}
+\lstset{basicstyle=\scriptsize}
 \let\jobyorig@lstmakecaption\lst@makecaption
 \long\def\lst@makecaption#1#2{{\usebeamerfont{caption}\jobyorig@lstmakecaption{#1}{#2}}}
 \RequirePackage{minted}
