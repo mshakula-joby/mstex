@@ -1,0 +1,14 @@
+% betterlistings with cleveref's hyperref support on (the Joby theme turns it on): listings no longer loop
+% forever (cleveref's listings hooks made \cref@currentprefix expand to itself), and \cref to a listing works.
+\documentclass[aspectratio=169,10pt]{beamer}
+\usetheme{joby}
+\usepackage{hyperref}
+\usepackage{cleveref}
+\begin{document}
+\begin{frame}[fragile]{Cleveref}
+	\begin{lstlisting}[caption={A listing},label={lst:one}]
+int CLEVEREF_CODE = 0;
+	\end{lstlisting}
+	See \cref{lst:one}.
+\end{frame}
+\end{document}

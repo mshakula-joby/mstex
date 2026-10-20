@@ -27,10 +27,13 @@
 % fonts/ and the logo source is kept as jobymark.svg here. Needs LuaLaTeX; other engines fall back to
 % Gotham's fonts with a warning.
 %
+% Code: the theme loads betterlistings (code blocks, the file= header, \code) and minted, with code blocks in
+% \scriptsize on the code background (made from the alternate background colorAltBG) and framed in the accent
+% color. minted needs Pygments through latexminted, which TeX runs without -shell-escape.
+%
 % Package integration (applied only if the package is loaded, whether before or after the theme):
 %   hyperref        - \href and \url links use the palette's emphasis (alert) color.
 %   revision-number - the revision (\makerevision) is printed small in the title page's bottom right corner.
-%   listings        - code blocks use the palette's accent color as their background.
 %   cleveref        - \cref links work (Beamer disables them) and cover the whole name, "Figure 1".
 %                   Load cleveref after the theme. A \label in a frame names the slide as the footer
 %                   shows it (\ref gives "5", \cref gives "slide 5", front matter slides "slide ii").
@@ -230,29 +233,10 @@
 	\Crefname{framenumber}{Slide}{Slides}%
 }
 
-\jobywithpackage{listings}{%
-	\lstset{
-		% On the code background, in the slide's text color (light on the dark variants), framed by a hairline in
-		% the accent color.
-		basicstyle=\ttfamily\scriptsize\usebeamercolor[fg]{normal text},
-		backgroundcolor=\color{code background},
-		frame=single,
-		framerule=0.3pt,
-		rulecolor=\color{colorAccent},
-		framexleftmargin=1ex,
-		framexrightmargin=1ex,
-		framextopmargin=1ex,
-		framexbottommargin=1ex,
-		xleftmargin=1ex,
-		xrightmargin=1ex,
-		breaklines=true,
-		showstringspaces=false,
-		columns=fullflexible,
-		keepspaces=true,
-	}%
-	% listings sets its captions itself, not through Beamer's caption templates, so give them Beamer's caption font.
-	\let\jobyorig@lstmakecaption\lst@makecaption
-	\long\def\lst@makecaption#1#2{{\usebeamerfont{caption}\jobyorig@lstmakecaption{#1}{#2}}}%
-}
+% Code: listings and minted blocks, and \code, from betterlistings (on the alternate background colorAltBG, framed
+% in the accent color), in \scriptsize.
+\RequirePackage{betterlistings}
+\RequirePackage{minted}
+\renewcommand{\betterlistingssize}{\scriptsize}
 
 \endinput

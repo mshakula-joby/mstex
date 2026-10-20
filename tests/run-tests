@@ -43,7 +43,8 @@ build() {
 	else
 		# A test named *-pdftex is built with pdfLaTeX instead of LuaLaTeX.
 		local engine=; [[ $name == *-pdftex ]] && engine=-pdf
-		(latexmk -silent -r "$TESTS/.latexmkrc" $engine "$TESTS/$name.tex" >"$TESTS/build/$name.latexmk.log" 2>&1)
+		# (A build that does not finish in five minutes has hung, and fails.)
+		(timeout 300 latexmk -silent -r "$TESTS/.latexmkrc" $engine "$TESTS/$name.tex" >"$TESTS/build/$name.latexmk.log" 2>&1)
 	fi
 	[ -f "$outdir/$name.pdf" ] && ! grep -q '^!\|^[^ ]*:[0-9]*: ' "$outdir/$name.log"
 }
@@ -221,7 +222,66 @@ PY
 		joby-titlepage-noinstitute)
 			expect_text "AUTHOR-WORD" "$name"; expect_text "DATE-WORD" "$name"; expect_no_text "Joby Aviation" "$name"
 			;;
-		common-code-pdftex)
+		betterlistings-file)
+			expect_text "src/fcc/MAIN_PATH.cpp" "$name"; expect_text "src/fcc/LIST_PATH.cpp" "$name"
+			# Each header strip (on "code header") is as wide as its block (on "code background") and starts where it
+			# does, the path starts where the code does, and the block without a file has no strip.
+			pdftoppm -r 300 -f 1 -l 1 -png "build/$name.pdf" "build/$name-img"
+			python3 -I - build/$name-img-*.png <<'PY' && pass "$name header strips fit their blocks" || fail "$name header strips fit their blocks"
+import sys, colorsys
+from PIL import Image
+im = Image.open(sys.argv[1]).convert("RGB")
+w, h = im.size
+def step(rgb, f):  # a step from a color: its hue, its saturation times f, a step darker (lighter if dark)
+    hh, s, v = colorsys.rgb_to_hsv(*(c / 255 for c in rgb))
+    v = 0.1 + 0.9 * v if v < 0.5 else 0.9 * v
+    return tuple(round(255 * c) for c in colorsys.hsv_to_rgb(hh, s * f, v))
+code = step((0xF5, 0xF4, 0xDF), 0.25)
+header = step(code, 1)
+near = lambda p, c: sum(abs(a - b) for a, b in zip(p, c)) < 6
+def bands(c):  # runs of rows with that color, and the color's horizontal extent in each
+    rows = [y for y in range(h) if sum(near(im.getpixel((x, y)), c) for x in range(0, w, 4)) > 20]
+    out, cur = [], [rows[0]]
+    for y in rows[1:]:
+        if y - cur[-1] > 1: out.append(cur); cur = [y]
+        else: cur.append(y)
+    out.append(cur)
+    res = []
+    for b in out:
+        y = b[len(b) // 2]
+        xs = [x for x in range(w) if near(im.getpixel((x, y)), c)]
+        res.append((b[0], b[-1], min(xs), max(xs)))
+    return res
+heads, blocks = bands(header), bands(code)
+assert len(heads) == 2 and len(blocks) == 3, (heads, blocks)
+for (ht, hb, hl, hr), (bt, bb, bl, br) in zip(heads, blocks):
+    assert abs(bt - hb) <= 3, "the strip is right on top of its block"
+    assert abs(hl - bl) <= 2 and abs(hr - br) <= 2, "as wide: %s %s" % ((hl, hr), (bl, br))
+    ink = lambda y0, y1: min(x for y in range(y0, y1 + 1) for x in range(hl, hr) if sum(im.getpixel((x, y))) < 300)
+    assert abs(ink(ht, hb) - ink(bt, bt + (hb - ht))) <= 3, "the path starts where the code does"
+PY
+			;;
+		betterlistings-cleveref)
+			# The build finishes (no loop); \cref names the listing.
+			expect_text "CLEVEREF_CODE" "$name"; expect_text "See listing 1." "$name"
+			;;
+		betterlistings-minted)
+			expect_text "MINTED_CODE" "$name"
+			# Highlighted: the keyword "int" and the comment are not in the text color; on the code background.
+			pdftoppm -r 150 -f 1 -l 1 -png "build/$name.pdf" "build/$name-img"
+			python3 -I - build/$name-img-*.png <<'PY' && pass "$name block is highlighted on the code background" || fail "$name block is highlighted on the code background"
+import sys, colorsys
+from PIL import Image
+im = Image.open(sys.argv[1]).convert("RGB")
+hh, s, v = colorsys.rgb_to_hsv(*(c / 255 for c in (0xF5, 0xF4, 0xDF)))
+code = tuple(round(255 * c) for c in colorsys.hsv_to_rgb(hh, s / 4, 0.9 * v))
+px = list(im.getdata())
+bg = sum(1 for p in px if sum(abs(a - b) for a, b in zip(p, code)) < 6)
+colored = sum(1 for p in px if max(p) - min(p) > 60 and sum(p) < 600 and not (p[2] > 200 and p[0] < 30))
+sys.exit(0 if bg > 2000 and colored > 30 else 1)
+PY
+			;;
+		betterlistings-code-pdftex)
 			grep -q "^Producer:.*pdfTeX" <(pdfinfo "build/$name.pdf") && pass "$name is built with pdfTeX" || fail "$name is built with pdfTeX"
 			expect_text "CMessage::Send()" "$name"; expect_text 'a_b{c}$d' "$name"
 			# A plain rectangle, white a step darker (E6E6E6), with square corners.
@@ -241,7 +301,7 @@ row = [x for x, y in pts if y == y0 + 1]
 sys.exit(0 if min(row) <= x0 else 1)
 PY
 			;;
-		common-code-fallback)
+		betterlistings-code-fallback)
 			# The pills are the slide background (dark here) a step lighter.
 			pdftoppm -r 100 -f 1 -l 1 -png "build/$name.pdf" "build/$name-img"
 			python3 -I - build/$name-img-*.png <<'PY' && pass "$name pills are made from the theme background" || fail "$name pills are made from the theme background"
@@ -260,7 +320,7 @@ n = sum(1 for p in im.getdata() if sum(abs(a - b) for a, b in zip(p, code)) < 4)
 sys.exit(0 if sum(code) > sum(bg) and n > 1000 else 1)
 PY
 			;;
-		common-code)
+		betterlistings-code)
 			grep -q '^Overfull \\hbox' "build/$name.log" && fail "$name code fits the line" || pass "$name code fits the line"
 			grep -q 'Token not allowed' "build/$name.log" && fail "$name code in a section title makes a clean bookmark" || pass "$name code in a section title makes a clean bookmark"
 			# Broken without a hyphen: the pieces are all there, and the long name continues on the next line.

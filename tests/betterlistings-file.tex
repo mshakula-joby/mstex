@@ -1,0 +1,20 @@
+% betterlistings: file=<path> shows the path as a header strip across the top of a listing, inside its frame and
+% as wide as it, also in a list (where the block is indented); a listing without it has no strip.
+\documentclass[aspectratio=169,10pt]{beamer}
+\usetheme{joby}
+\begin{document}
+\begin{frame}[fragile]{File}
+	\begin{lstlisting}[file=src/fcc/MAIN_PATH.cpp]
+int main() { return 0; }
+	\end{lstlisting}
+	\begin{itemize}
+		\item In a list:
+		\begin{lstlisting}[file=src/fcc/LIST_PATH.cpp]
+int x = 1;
+		\end{lstlisting}
+	\end{itemize}
+	\begin{lstlisting}
+int NO_FILE = 2;
+	\end{lstlisting}
+\end{frame}
+\end{document}

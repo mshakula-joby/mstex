@@ -1,9 +1,10 @@
--- common-code.lua
+-- betterlistings.lua
 --
--- The pills of \code (common.sty), drawn by LuaTeX.
+-- The pills of \code (betterlistings.sty), drawn by LuaTeX.
 --
--- \code typesets its text with the attribute common@codeattr set to a number of its own, which keys the style
--- registered by commoncode.style(<number>, <ht>, <dp>, <radius>, "<r g b>") (dimensions in sp, color in 0..1).
+-- \code typesets its text with the attribute betterlistings@codeattr set to a number of its own, which keys the
+-- style registered by betterlistings.style(<number>, <ht>, <dp>, <radius>, "<r g b>") (dimensions in sp, color
+-- in 0..1).
 -- Between the chunks of the code there are discretionaries: empty ones where the line may break inside a word,
 -- and at spaces one whose no-break text is the space.
 --
@@ -15,10 +16,10 @@
 -- After the line breaking (post_linebreak_filter), and in boxes, each run of code in a line gets one rounded
 -- rectangle behind it, a PDF literal: one shape per line, with no seams.
 
-commoncode = commoncode or {}
+betterlistings = betterlistings or {}
 
-local attr = luatexbase.registernumber("common@codeattr")
-local padattr = luatexbase.registernumber("common@codepadattr") -- set on the runs that have their padding
+local attr = luatexbase.registernumber("betterlistings@codeattr")
+local padattr = luatexbase.registernumber("betterlistings@codepadattr") -- set on the runs that have their padding
 local styles = {}
 
 local GLYPH = node.id("glyph")
@@ -26,7 +27,7 @@ local DISC = node.id("disc")
 local HLIST = node.id("hlist")
 local identifiers = fonts and fonts.hashes and fonts.hashes.identifiers
 
-function commoncode.style(id, ht, dp, r, rgb)
+function betterlistings.style(id, ht, dp, r, rgb)
 	styles[id] = { ht = ht, dp = dp, r = r, rgb = rgb }
 end
 
@@ -183,15 +184,15 @@ end
 
 luatexbase.add_to_callback("pre_linebreak_filter", function(head)
 	return pad(head)
-end, "common.code.pad")
+end, "betterlistings.code.pad")
 
 luatexbase.add_to_callback("post_linebreak_filter", function(head)
 	for line in node.traverse_id(HLIST, head) do
 		line.list = draw(line.list, line)
 	end
 	return head
-end, "common.code.draw")
+end, "betterlistings.code.draw")
 
 luatexbase.add_to_callback("hpack_filter", function(head)
 	return draw(pad(head))
-end, "common.code.box")
+end, "betterlistings.code.box")

@@ -1,0 +1,324 @@
+% betterlistings.sty
+%
+% Code in slides and documents, with one look for blocks (listings, and minted when it is loaded) and inline
+% code. Loads listings and xcolor. Works with any class; with Beamer, captions use its caption font and the code
+% its normal text color.
+%
+%   Code blocks
+%       listings (and minted) blocks are in \ttfamily at \betterlistingssize, on the color "code background",
+%       framed by a hairline in "code frame", with a little margin, and break long lines.
+%   \betterlistingssize
+%       The font size of code blocks: empty (the surrounding size) unless redefined (the Joby theme makes it
+%       \scriptsize).
+%   file=<path>
+%       A listings key: <path> is shown in \ttfamily as a header strip across the top of the block, on "code
+%       header", inside the block's frame (\begin{lstlisting}[file=src/main.cpp] ...,
+%       \lstinputlisting[file=src/main.cpp]{listings/main.cpp}). Blocks without it are unchanged.
+%   \code{<code>}
+%       Inline code: <code> in \ttfamily on a rounded rectangle (a "pill") in "code background", with the text in
+%       "code text" if it is defined, else in the surrounding text color. The line may break at a space, where a
+%       lower case letter or digit is followed by a capital, and after _ or ::, without a hyphen; the pill is
+%       then closed at the end of the line and opened again on the next one. The pills hug the ink of the code
+%       and are drawn by LuaTeX (betterlistings.lua), one shape for each line; other engines put the code on a
+%       plain rectangle, which does not break.
+%       The code is literal: every character prints as it is, \, {, }, $, &, #, ^, _ and ~ included, and commands
+%       are not run (\code{\textbf{x}} prints \textbf{x}). Braces must balance. % is literal too, except where
+%       \code is in the argument of another command (a frame without [fragile], a glossary title): there TeX has
+%       already read the text, and % starts a comment.
+%   Colors
+%       A document or theme may define any of them; otherwise "code background" is made from the alternate
+%       background colorAltBG, or when there is none from the theme's background (Beamer's normal text
+%       background), or from white: the same hue with a quarter of the saturation, a step darker, or a step
+%       lighter if it is dark. "code header" is a step further, and "code frame" is colorAccent, or a step
+%       further again.
+%
+% With cleveref's hyperref support on (as the Joby theme has it), cleveref's listings hooks make
+% \cref@currentprefix expand to itself, and the first listing loops forever; this package sets the listings'
+% label with the prefix expanded.
+
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{betterlistings}[2026/10/20 Code blocks and inline code]
+
+\RequirePackage{xcolor}
+\RequirePackage{listings}
+
+% --- Colors -----------------------------------------------------------------------------------------------
+\ExplSyntaxOn
+\tl_new:N \l__betterlistings_model_tl
+\tl_new:N \l__betterlistings_spec_tl
+\tl_new:N \l__betterlistings_hsb_tl
+% Defines color #2 as a step from color #1: its hue, its saturation times #3, and a step darker, or lighter if #1
+% is dark.
+\cs_new_protected:Npn \__betterlistings_step:nnn #1#2#3
+  {
+    \extractcolorspecs {#1} \l__betterlistings_model_tl \l__betterlistings_spec_tl
+    \convertcolorspec \l__betterlistings_model_tl \l__betterlistings_spec_tl { hsb } \l__betterlistings_hsb_tl
+    \use:e
+      {
+        \exp_not:N \definecolor {#2} { hsb }
+          {
+            \clist_item:Nn \l__betterlistings_hsb_tl { 1 } ,
+            \fp_eval:n { #3 * \clist_item:Nn \l__betterlistings_hsb_tl { 2 } } ,
+            \fp_eval:n
+              {
+                \fp_compare:nNnTF { \clist_item:Nn \l__betterlistings_hsb_tl { 3 } } < { 0.5 }
+                  { 0.1 + 0.9 * } { 0.9 * } \clist_item:Nn \l__betterlistings_hsb_tl { 3 }
+              }
+          }
+      }
+  }
+\cs_new_protected:Npn \__betterlistings_colors:
+  {
+    \@ifundefinedcolor { code~background }
+      {
+        \@ifundefinedcolor { colorAltBG }
+          {
+            \colorlet { betterlistings@base } { white }
+            \cs_if_exist:NT \usebeamercolor
+              {
+                \group_begin:
+                  \usebeamercolor { normal~text }
+                  \@ifundefinedcolor { normal~text.bg } { }
+                    { \xglobal \colorlet { betterlistings@base } { normal~text.bg } }
+                \group_end:
+              }
+          }
+          { \colorlet { betterlistings@base } { colorAltBG } }
+        \__betterlistings_step:nnn { betterlistings@base } { code~background } { 0.25 }
+      }
+      { }
+    \@ifundefinedcolor { code~header }
+      { \__betterlistings_step:nnn { code~background } { code~header } { 1 } }
+      { }
+    \@ifundefinedcolor { code~frame }
+      {
+        \@ifundefinedcolor { colorAccent }
+          { \__betterlistings_step:nnn { code~header } { code~frame } { 1 } }
+          { \colorlet { code~frame } { colorAccent } }
+      }
+      { }
+  }
+% The text color of code: "code text", else Beamer's normal text color, else the surrounding one.
+\cs_new_protected:Npn \betterlistings@textcolor
+  {
+    \@ifundefinedcolor { code~text }
+      { \cs_if_exist:NT \usebeamercolor { \usebeamercolor [ fg ] { normal~text } } }
+      { \color { code~text } }
+  }
+\ExplSyntaxOff
+\AtBeginDocument{\csname __betterlistings_colors:\endcsname}
+
+% --- Code blocks ------------------------------------------------------------------------------------------
+\newcommand{\betterlistingssize}{}
+\lstset{
+	basicstyle=\ttfamily\betterlistingssize\betterlistings@textcolor,
+	backgroundcolor=\color{code background},
+	frame=single,
+	framerule=0.3pt,
+	rulecolor=\color{code frame},
+	framexleftmargin=1ex,
+	framexrightmargin=1ex,
+	framextopmargin=1ex,
+	framexbottommargin=1ex,
+	xleftmargin=1ex,
+	xrightmargin=1ex,
+	breaklines=true,
+	showstringspaces=false,
+	columns=fullflexible,
+	keepspaces=true,
+}
+% listings sets its captions itself, not through Beamer's caption templates, so give them Beamer's caption font.
+\@ifclassloaded{beamer}{%
+	\let\betterlistings@lstmakecaption\lst@makecaption
+	\long\def\lst@makecaption#1#2{{\usebeamerfont{caption}\betterlistings@lstmakecaption{#1}{#2}}}%
+}{}
+
+% The file key. A block with a file has the path as its title, shown as the header strip (\lst@maketitle is
+% redefined below), no gap after the title, and its frame open at the top: the strip's bottom rule closes it.
+\newcommand{\betterlistings@file}{}
+\lst@Key{file}{}{%
+	% The path is literal (it may have _ in it).
+	\edef\betterlistings@file{\detokenize{#1}}%
+	\ifx\betterlistings@file\@empty\else
+		\def\lst@title{\betterlistings@file}\let\lst@caption\relax
+		\def\lst@frame{rbl}\expandafter\lstframe@\lst@frameround ffff\relax
+		\def\lst@belowcaption{0pt}%
+	\fi
+}
+% The frame's outer left edge (from the page's text margin) and outer width, and where the code starts in it,
+% taken where the block starts (listings resets the line width and list margin for the title). (listings keeps
+% its dimensions as text: 2\lst@frametextsep would be 23pt.)
+\newdimen\betterlistings@frameleft
+\newdimen\betterlistings@framewidth
+\newdimen\betterlistings@codeindent
+\let\betterlistings@MakeCaption\lst@MakeCaption
+\def\lst@MakeCaption#1{%
+	\if t#1\ifx\betterlistings@file\@empty\else
+		% In the code's font, where listings takes its margins (1ex) too.
+		\begingroup\lst@basicstyle
+		\global\betterlistings@frameleft=\dimexpr\@totalleftmargin+\lst@xleftmargin-\lst@framexleftmargin
+			-\lst@frametextsep-\lst@framerulewidth\relax
+		\global\betterlistings@framewidth=\dimexpr\linewidth-\lst@xleftmargin-\lst@xrightmargin
+			+\lst@framexleftmargin+\lst@framexrightmargin
+			+2\dimexpr\lst@frametextsep\relax+2\dimexpr\lst@framerulewidth\relax\relax
+		\global\betterlistings@codeindent=\dimexpr\lst@frametextsep+\lst@framexleftmargin\relax
+		\endgroup
+	\fi\fi
+	\betterlistings@MakeCaption{#1}}
+% The header strip: the path on "code header" in a box framed in "code frame", as wide as the block's frame
+% (the line width, and the frame's rule and separation on both sides). Its side rules reach a little below it,
+% over the top of the block's side rules, so that no hairline shows where they meet.
+\newbox\betterlistings@headbox
+\newcommand{\betterlistings@header}[1]{%
+	\begingroup
+	% The path starts where the code does.
+	\setbox\betterlistings@headbox\hbox to \dimexpr\betterlistings@framewidth-2\dimexpr\lst@framerulewidth\relax\relax{%
+		\hskip\betterlistings@codeindent
+		{\ttfamily\betterlistingssize\betterlistings@textcolor\strut\betterlistings@file}%
+		\hfil}%
+	\dimen2=\wd\betterlistings@headbox
+	\setbox\betterlistings@headbox\vbox{%
+		\offinterlineskip
+		\hbox{\color{code frame}\vrule width \dimen2 height \lst@framerulewidth}%
+		\hbox{%
+			{\color{code header}\vrule width \dimen2
+				height \dimexpr\ht\betterlistings@headbox+0.4ex\relax
+				depth \dimexpr\dp\betterlistings@headbox+0.4ex\relax}%
+			\hskip-\dimen2
+			\box\betterlistings@headbox}%
+		\hbox{\color{code frame}\vrule width \dimen2 height \lst@framerulewidth}}%
+	% A box in the vertical list (not a paragraph, which a list would indent again), right on top of the block:
+	% the side rules reach 1pt below it, but the box has no depth, so the block follows at once.
+	\setbox\betterlistings@headbox\hbox{%
+		\color{code frame}%
+		\vrule width \lst@framerulewidth height \ht\betterlistings@headbox depth 1pt
+		\box\betterlistings@headbox
+		\vrule width \lst@framerulewidth height \ht\betterlistings@headbox depth 1pt}%
+	\dp\betterlistings@headbox=\z@
+	\moveright\betterlistings@frameleft\box\betterlistings@headbox
+	\nointerlineskip
+	\endgroup
+}
+\AddToHook{begindocument/end}{%
+	\let\betterlistings@maketitle\lst@maketitle
+	\def\lst@maketitle{%
+		\ifx\betterlistings@file\@empty
+			\expandafter\betterlistings@maketitle
+		\else
+			\expandafter\betterlistings@header
+		\fi}%
+}
+
+% cleveref (with its hyperref support) sets the label of listing lines with \cref@currentprefix unexpanded,
+% and its EveryPar hook then defines \cref@currentprefix as itself. Set later, the label has it expanded.
+\AddToHook{begindocument/end}{%
+	\@ifpackageloaded{cleveref}{%
+		\lst@AddToHook{Init}{%
+			\edef\cref@currentlabel{[line][\noexpand\arabic{lstnumber}][%
+				\ifdefined\cref@currentprefix\cref@currentprefix\fi]\noexpand\thelstnumber}}%
+	}{}%
+}
+
+% minted blocks get the same look, whenever minted is loaded.
+\newcommand{\betterlistings@minted}{%
+	\setminted{
+		fontsize=\betterlistingssize,
+		bgcolor=code background,
+		frame=single,
+		framerule=0.3pt,
+		rulecolor=code frame,
+		framesep=1ex,
+		breaklines=true,
+	}%
+}
+\@ifpackageloaded{minted}{\betterlistings@minted}{\AddToHook{package/minted/after}{\betterlistings@minted}}
+
+% --- Inline code ------------------------------------------------------------------------------------------
+% The text is cut into chunks at its break points, with a \discretionary between two chunks: an empty one inside
+% a word, and at a space one whose no-break text is the space. With LuaTeX the text carries the attribute
+% betterlistings@codeattr, set to a number of its own that keys its style (height, depth, radius and color),
+% and betterlistings.lua does the rest: the padding, set against the ink, at the ends of the code and as the
+% discretionaries' pre-break and post-break text, and after the line breaking one rounded rectangle behind the
+% code on each line. Without LuaTeX the code is on a plain \colorbox, which does not break.
+\ifdefined\directlua
+	\newattribute\betterlistings@codeattr
+	\newattribute\betterlistings@codepadattr
+	% (Found like a TeX file: Lua's module path need not include TEXINPUTS.)
+	\directlua{local f = kpse.find_file("betterlistings.lua") if f then dofile(f) end}
+\fi
+% Bookmarks and other PDF strings get the plain code.
+\AtBeginDocument{%
+	\ifdefined\pdfstringdefDisableCommands\pdfstringdefDisableCommands{\let\code\@firstofone}\fi
+}
+\ExplSyntaxOn
+\tl_new:N \l__betterlistings_code_tl
+\tl_new:N \l__betterlistings_rgb_tl
+\int_new:N \g__betterlistings_code_int
+\cs_new_protected:Npn \__betterlistings_break: { \tex_discretionary:D { } { } { } }
+\cs_new_protected:Npn \__betterlistings_space: { \tex_discretionary:D { } { } { \tex_kern:D \fontdimen 2 \font } }
+% \code reads its argument with the special characters made printable (except the braces, which delimit it), so
+% that it is literal where it has not been read yet. Where it has (in an argument), it is turned into a string:
+% the characters are then printable all the same, but control words come with a space after them, which is taken
+% out again unless a letter follows (a space after a control word was not typed, or TeX would have dropped it).
+\NewDocumentCommand \code { }
+  {
+    \mode_leave_vertical:
+    \group_begin:
+      \clist_map_inline:nn { 92, 36, 38, 35, 94, 95, 37, 126 } { \char_set_catcode_other:n {##1} }
+      \__betterlistings_read:n
+  }
+\cs_new_protected:Npn \__betterlistings_read:n #1
+  {
+    \group_end:
+    \__betterlistings_code:n {#1}
+  }
+\cs_new_protected:Npn \__betterlistings_unspace:
+  {
+    \regex_replace_all:nnNT { (\\[A-Za-z@]+)\ ([^A-Za-z@]) } { \1\2 } \l__betterlistings_code_tl
+      { \__betterlistings_unspace: }
+  }
+\cs_new_protected:Npn \__betterlistings_code:n #1
+  {
+    \group_begin:
+      \tl_set:Nn \l__betterlistings_code_tl {#1}
+      \regex_replace_all:nnN { \cP\# } { \cO\# } \l__betterlistings_code_tl
+      \tl_set:Ne \l__betterlistings_code_tl { \tl_to_str:N \l__betterlistings_code_tl }
+      \__betterlistings_unspace:
+      \tl_trim_spaces:N \l__betterlistings_code_tl
+      \regex_replace_all:nnN { ([a-z0-9])([A-Z]) } { \1 \c{__betterlistings_break:} \2 } \l__betterlistings_code_tl
+      \regex_replace_all:nnN { (_|::) } { \1 \c{__betterlistings_break:} } \l__betterlistings_code_tl
+      \regex_replace_all:nnN { \s+ } { \c{__betterlistings_space:} } \l__betterlistings_code_tl
+      \ttfamily
+      \sys_if_engine_luatex:TF
+        {
+          \int_gincr:N \g__betterlistings_code_int
+          \extractcolorspecs { code~background } \l__betterlistings_model_tl \l__betterlistings_spec_tl
+          \convertcolorspec \l__betterlistings_model_tl \l__betterlistings_spec_tl { rgb } \l__betterlistings_rgb_tl
+          \tl_replace_all:Nnn \l__betterlistings_rgb_tl { , } { ~ }
+          % The pill is as tall as a parenthesis, the tallest and deepest common glyph, plus 0.1em, and its ends
+          % are rounded with a radius of 0.12em, which is also the padding beside the ink.
+          \lua_now:e
+            {
+              betterlistings.style
+                (
+                  \int_use:N \g__betterlistings_code_int ,
+                  \dim_to_decimal_in_sp:n { \fontcharht \font `( + 0.1em } ,
+                  \dim_to_decimal_in_sp:n { \fontchardp \font `( + 0.1em } ,
+                  \dim_to_decimal_in_sp:n { 0.12em } ,
+                  "\l__betterlistings_rgb_tl"
+                )
+            }
+          \betterlistings@codeattr = \g__betterlistings_code_int
+          \@ifundefinedcolor { code~text } { } { \color { code~text } }
+          \tl_use:N \l__betterlistings_code_tl
+        }
+        {
+          \dim_set:Nn \fboxsep { 0.1em }
+          \colorbox { code~background }
+            { \@ifundefinedcolor { code~text } { } { \color { code~text } } \tl_use:N \l__betterlistings_code_tl }
+        }
+    \group_end:
+  }
+\ExplSyntaxOff
+
+\endinput

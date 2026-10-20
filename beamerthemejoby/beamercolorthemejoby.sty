@@ -110,27 +110,12 @@
     \colorlet { colorPale } { JobyWhite }
     \colorlet { colorC } { JobyBlue }
   }
-% colorAltBG, the alternate background, for areas set off from the slide (listings, inline code): Joby Off-White
-% on the light variants, and on the dark ones the off-black background a step lighter, toward Joby White.
+% colorAltBG, the alternate background, for areas set off from the slide: Joby Off-White on the light variants,
+% and on the dark ones the off-black background a step lighter, toward Joby White. betterlistings makes the code
+% background (listings, minted, \code) from it.
 \bool_if:NTF \g_joby_dark_bool
   { \colorlet { colorAltBG } { JobyWhite!10!JobyOffBlack } }
   { \colorlet { colorAltBG } { JobyOffWhite } }
-% The code background (listings, and \code of the common package): the alternate background with a quarter of
-% its saturation, a step darker on the light variants and a step lighter on the dark ones; close to gray, but in
-% its own hue.
-\tl_new:N \l__joby_hsb_tl
-\extractcolorspecs { colorAltBG } \l_tmpa_tl \l_tmpb_tl
-\convertcolorspec \l_tmpa_tl \l_tmpb_tl { hsb } \l__joby_hsb_tl
-\use:e
-  {
-    \exp_not:N \definecolor { code~background } { hsb }
-      {
-        \clist_item:Nn \l__joby_hsb_tl { 1 } ,
-        \fp_eval:n { 0.25 * \clist_item:Nn \l__joby_hsb_tl { 2 } } ,
-        \fp_eval:n
-          { \bool_if:NTF \g_joby_dark_bool { 0.1 + 0.9 * } { 0.9 * } \clist_item:Nn \l__joby_hsb_tl { 3 } }
-      }
-  }
 \ExplSyntaxOff
 \gothamReloadColors
 \endinput
