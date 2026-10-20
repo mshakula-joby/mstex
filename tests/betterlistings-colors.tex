@@ -1,0 +1,14 @@
+% Code highlighting with the Joby theme: in the green palette, keywords are in its primary color (Joby Green),
+% strings in Joby Dark Orange (not green, which the keywords have), and preprocessor directives in Joby Purple.
+\documentclass[aspectratio=169,10pt]{beamer}
+\usetheme[palette=green]{joby}
+\lstset{style=betterlisting}
+\renewcommand{\betterlistingssize}{\Large}
+\begin{document}
+\begin{frame}[fragile]{Colors}
+	\begin{lstlisting}[language=C++]
+#define DIRECTIVE 1
+int x; while (true) { return "a string literal"; }
+	\end{lstlisting}
+\end{frame}
+\end{document}

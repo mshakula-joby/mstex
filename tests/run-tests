@@ -326,6 +326,21 @@ first = [(i, float(y)) for i, (w, h, body) in enumerate(pages) for y, t in re.fi
 assert cap and first and cap[0][0] == first[0][0] and cap[0][1] < first[0][1], ("the caption is above the code", cap, first)
 PY
 			;;
+		betterlistings-colors)
+			# Below the title bar (also green): keyword green, string dark orange, directive purple.
+			pdftoppm -r 150 -f 1 -l 1 -png "build/$name.pdf" "build/$name-img"
+			python3 -I - build/$name-img-*.png <<'PY' && pass "$name keywords, strings and directives have the brand colors" || fail "$name keywords, strings and directives have the brand colors"
+import sys
+from PIL import Image
+im = Image.open(sys.argv[1]).convert("RGB")
+w, h = im.size
+px = [im.getpixel((x, y)) for y in range(int(h * 0.2), h) for x in range(w)]
+n = lambda c: sum(1 for p in px if sum(abs(a - b) for a, b in zip(p, c)) < 40)
+counts = {"keyword": n((0x00, 0x99, 0x4C)), "string": n((0xD0, 0x4C, 0x00)), "directive": n((0x88, 0x3D, 0xF2))}
+print("    %s" % counts)
+sys.exit(0 if all(v > 30 for v in counts.values()) else 1)
+PY
+			;;
 		betterlistings-cleveref)
 			# The build finishes (no loop); \cref names the listing.
 			expect_text "CLEVEREF_CODE" "$name"; expect_text "See listing 1." "$name"

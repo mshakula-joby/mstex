@@ -116,6 +116,20 @@
 \bool_if:NTF \g_joby_dark_bool
   { \colorlet { colorAltBG } { JobyWhite!10!JobyOffBlack } }
   { \colorlet { colorAltBG } { JobyOffWhite } }
+% Code highlighting (betterlistings) in the brand colors: keywords in the palette's primary color, strings in
+% Joby Green (Joby Dark Orange in the green palette, whose primary is green), preprocessor directives in Joby
+% Purple; lightened toward Joby White on the dark variants, to read on their dark code background.
+\colorlet { code~keyword } { colorA }
+\str_if_eq:VnTF \g_joby_palette_tl { green }
+  { \colorlet { code~string } { JobyDarkOrange } }
+  { \colorlet { code~string } { JobyGreen } }
+\colorlet { code~directive } { JobyPurple }
+\bool_if:NT \g_joby_dark_bool
+  {
+    \colorlet { code~keyword } { code~keyword!60!JobyWhite }
+    \colorlet { code~string } { code~string!60!JobyWhite }
+    \colorlet { code~directive } { code~directive!60!JobyWhite }
+  }
 \ExplSyntaxOff
 \gothamReloadColors
 \endinput

@@ -9,9 +9,9 @@
 %       or \lstset{style=betterlisting} for all listings; listings without it are plain listings, as without
 %       this package (betterlisting=false turns it off again for one). A block in the style is a box with
 %       rounded corners on the color "code background", with a hairline border in "code border"; the code is in
-%       \ttfamily at \betterlistingssize, highlighted (bold keywords in "code keyword", strings in "code
-%       string", comments in "code comment"), with line numbers in "code number", and long lines break with an
-%       arrow. The language comes from the file's extension (file=, or the input file's name; C++, Python,
+%       \ttfamily at \betterlistingssize, highlighted (keywords in "code keyword", strings in "code string",
+%       comments in "code comment", preprocessor directives in "code directive"), with line numbers in "code
+%       number", and long lines break with an arrow. The language comes from the file's extension (file=, or the input file's name; C++, Python,
 %       Java, bash, Lua, LaTeX and others), else \betterlistingsdefaultlanguage (C++); language= overrides it.
 %       caption= and title= are a caption above the box (below it with captionpos=b), numbered like listings'
 %       own ("Listing 1: ..."), with label= and an entry in the list of listings.
@@ -47,8 +47,9 @@
 %       background), or from white: the same hue with a quarter of the saturation, a step darker, or a step
 %       lighter if it is dark. "code header" is a step further, "code border" a step further again, "code
 %       frame" is colorAccent, or a step beyond the border, and "code shadow" is the code frame color mixed
-%       60% into the background. The highlighting colors are mixed with the text color ("code text", Beamer's normal text
-%       color or black), so they read on light and dark backgrounds.
+%       60% into the background. The highlighting colors are those of the One Light theme on a light code
+%       background and of One Dark on a dark one; comments are the text color ("code text", Beamer's normal text
+%       color or black) halfway to the background.
 %
 % With cleveref's hyperref support on (as the Joby theme has it), cleveref's listings hooks make
 % \cref@currentprefix expand to itself, and the first listing loops forever; this package sets the listings'
@@ -59,6 +60,8 @@
 
 \RequirePackage{xcolor}
 \RequirePackage{listings}
+% (The style colors preprocessor directives: that key comes with listings' directives aspect.)
+\lstloadaspects{directives}
 
 % --- Colors -----------------------------------------------------------------------------------------------
 \ExplSyntaxOn
@@ -133,9 +136,21 @@
           }
       }
       { \colorlet { betterlistings@fg } { code~text } }
-    % Highlighting, mixed with the text color so that it reads on light and dark backgrounds alike.
-    \@ifundefinedcolor { code~keyword } { \colorlet { code~keyword } { blue!65!betterlistings@fg } } { }
-    \@ifundefinedcolor { code~string } { \colorlet { code~string } { green!55!betterlistings@fg } } { }
+    % Highlighting: the colors of the One Light theme on a light code background, of One Dark on a dark one
+    % (keywords, strings, preprocessor directives); comments are the text color halfway to the background.
+    \extractcolorspecs { code~background } \l__betterlistings_model_tl \l__betterlistings_spec_tl
+    \convertcolorspec \l__betterlistings_model_tl \l__betterlistings_spec_tl { gray } \l__betterlistings_hsb_tl
+    \fp_compare:nNnTF { \l__betterlistings_hsb_tl } < { 0.5 }
+      {
+        \@ifundefinedcolor { code~keyword } { \definecolor { code~keyword } { HTML } { C678DD } } { }
+        \@ifundefinedcolor { code~string } { \definecolor { code~string } { HTML } { 98C379 } } { }
+        \@ifundefinedcolor { code~directive } { \definecolor { code~directive } { HTML } { 61AFEF } } { }
+      }
+      {
+        \@ifundefinedcolor { code~keyword } { \definecolor { code~keyword } { HTML } { A626A4 } } { }
+        \@ifundefinedcolor { code~string } { \definecolor { code~string } { HTML } { 50A14F } } { }
+        \@ifundefinedcolor { code~directive } { \definecolor { code~directive } { HTML } { 4078F2 } } { }
+      }
     \@ifundefinedcolor { code~comment }
       { \colorlet { code~comment } { betterlistings@fg!55!code~background } } { }
     \@ifundefinedcolor { code~number }
@@ -177,9 +192,10 @@
 \lstdefinestyle{betterlisting}{
 	betterlisting=true,
 	basicstyle=\ttfamily\betterlistingssize\betterlistings@textcolor,
-	keywordstyle=\bfseries\color{code keyword},
+	keywordstyle=\color{code keyword},
 	stringstyle=\color{code string},
 	commentstyle=\color{code comment},
+	directivestyle=\color{code directive},
 	numbers=left,
 	numberstyle=\tiny\color{code number},
 	numbersep=1em,
