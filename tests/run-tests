@@ -408,6 +408,20 @@ PY
 			done
 			[ -n "$ok" ] && pass "$name the rule, shadow and side edge meet cleanly" || fail "$name the rule, shadow and side edge meet cleanly"
 			;;
+		betterlistings-autonumber)
+			# Each line number stands before its line: LINE028 is numbered 28, ..., and the firstnumber=5 block 5, 6.
+			t=$(pdftotext -f 1 -l 1 -layout "build/$name.pdf" -)
+			ok=1
+			for pair in "28 028" "31 031" "50 050" "52 052" "5 010" "6 011"; do
+				set -- $pair
+				grep -qE "^ *$1 +int split_line_$2 " <<<"$t" || { echo "    line $2 is not numbered $1"; ok=; }
+			done
+			[ -n "$ok" ] && pass "$name ranges are numbered by the file's lines" || fail "$name ranges are numbered by the file's lines"
+			# The title shows, unnumbered and above its block; the later caption replaces the other title, numbered 1.
+			t=$(pdftotext -f 1 -l 1 "build/$name.pdf" -)
+			grep -qx "TITLE-SHOWN" <<<"$t" && pass "$name the title shows, unnumbered" || fail "$name the title shows, unnumbered"
+			expect_no_text "TITLE-REPLACED" "$name"; expect_text "Listing 1: CAPTION-WINS" "$name"
+			;;
 		betterlistings-cleveref)
 			# The build finishes (no loop); \cref names the listing.
 			expect_text "CLEVEREF_CODE" "$name"; expect_text "See listing 1." "$name"

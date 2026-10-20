@@ -14,8 +14,11 @@
 %       out of copied text, unless copynumbers=true), and long lines break with an arrow. The language comes
 %       from the file's extension (file=, or the input file's name; C++, Python, Java, bash, Lua, LaTeX and
 %       others), else \betterlistingsdefaultlanguage (C++); language= overrides it.
-%       caption= and title= are a caption above the box (below it with captionpos=b), numbered like listings'
-%       own ("Listing 1: ..."), with label= and an entry in the list of listings.
+%       caption= is a caption above the box (below it with captionpos=b), numbered like listings' own ("Listing
+%       1: ..."), with label= and an entry in the list of listings; title= is listings' unnumbered caption, set
+%       there as listings sets it (whichever of the two is given last counts, as in listings).
+%       A block that shows a range of its file (linerange= with one range, firstline=, lastline=) is numbered by the
+%       file's lines (linerange={28-77} is numbered 28 to 77), unless firstnumber= (other than auto) is given.
 %       In Beamer, a block longer than a slide is split into boxes of whole lines that fit a slide, with the
 %       line numbers going on, which an allowframebreaks frame puts on consecutive slides (a box cannot break
 %       across slides). splitlines=<n> sets the most lines in a box (0: never split). Boxes break across pages
@@ -173,9 +176,10 @@
 % The look is the listings style betterlisting, which a document opts into, per block (style=betterlisting) or
 % for all of them (\lstset{style=betterlisting}); a listing without it is a plain listing, as without this
 % package. The style sets the key betterlisting=true, which marks the blocks to box.
-% A boxed block is a tcolorbox (rounded, on the code background, with a hairline border in the code frame color)
-% with the listing inside it, without a frame or background of its own: listings paints its background line by
-% line, which viewers show with seams. Its caption (caption= or title=) is above it, numbered ("Listing 1: ...").
+% A boxed block is a tcolorbox (rounded, on the code background, with no border; a header has the accent
+% outline) with the listing inside it, without a frame or background of its own: listings paints its background line by
+% line, which viewers show with seams. Its caption (caption=) is above it, numbered ("Listing 1: ..."), or its
+% title (title=), unnumbered.
 % lstlisting writes its body to a file (tcolorbox's \tcbwritetemp) and shows it the way \lstinputlisting shows a
 % file: as boxes if it has the style, else with listings' own \lstinputlisting. Inside a box, tcolorbox calls
 % \lstinputlisting itself, which is then listings' own.
@@ -238,6 +242,7 @@
 \tl_new:N \g__betterlistings_file_tl
 \tl_new:N \g__betterlistings_split_tl
 \tl_new:N \g__betterlistings_caption_tl
+\tl_new:N \g__betterlistings_captype_tl
 \tl_new:N \g__betterlistings_short_tl
 \tl_new:N \g__betterlistings_label_tl
 \tl_new:N \g__betterlistings_captionpos_tl
@@ -252,6 +257,7 @@
 \dim_new:N \l__betterlistings_avail_dim
 \dim_new:N \g__betterlistings_line_dim
 \bool_new:N \l__betterlistings_range_bool
+\bool_new:N \l__betterlistings_autonumber_bool
 % The language for a file name: from its extension, else the default.
 \cs_new_protected:Npn \__betterlistings_language:n #1
   {
@@ -272,7 +278,7 @@
       }
   }
 % Reads a block's listings options #1, over the current settings: whether it has the style, its file, split and
-% caption (caption= or title=, with its short form and label, and where it goes).
+% caption (caption=, with its short form and label, and where it goes).
 \cs_new_protected:Npn \__betterlistings_scan:n #1
   {
     \group_begin:
@@ -288,8 +294,11 @@
       \tl_gset:No \g__betterlistings_split_tl { \betterlistings@splitlines }
       \tl_gset:No \g__betterlistings_label_tl { \lst@label }
       \tl_gset:No \g__betterlistings_captionpos_tl { \lst@captionpos }
+      % A caption (numbered), or a title (listings' unnumbered caption): whichever was given last, as in listings
+      % (a title clears the caption and the other way round).
       \tl_if_empty:NTF \lst@title
         {
+          \tl_gset:Nn \g__betterlistings_captype_tl { caption }
           \token_if_eq_meaning:NNTF \lst@caption \relax
             { \tl_gclear:N \g__betterlistings_caption_tl \tl_gclear:N \g__betterlistings_short_tl }
             {
@@ -298,8 +307,9 @@
             }
         }
         {
+          \tl_gset:Nn \g__betterlistings_captype_tl { title }
           \tl_gset:No \g__betterlistings_caption_tl { \lst@title }
-          \tl_gset:No \g__betterlistings_short_tl { \lst@title }
+          \tl_gclear:N \g__betterlistings_short_tl
         }
     \group_end:
   }
@@ -340,24 +350,41 @@
       }
   }
 % The caption, numbered like listings' own ("Listing 1: ..."), with its label and its entry in the list of
-% listings, in the caption font (Beamer's).
+% listings, in the caption font (Beamer's); or the title, unnumbered, as listings sets it.
 \cs_new_protected:Npn \__betterlistings_caption:
   {
-    \tl_if_empty:NF \g__betterlistings_caption_tl
+    \bool_lazy_and:nnT
+      { ! \tl_if_empty_p:N \g__betterlistings_caption_tl }
+      { \str_if_eq_p:Vn \g__betterlistings_captype_tl { caption } }
       {
         \par
         \refstepcounter { lstlisting }
         \tl_if_empty:NF \g__betterlistings_label_tl { \exp_args:NV \label \g__betterlistings_label_tl }
         \exp_args:Nnne \addcontentsline { \ext@lstlisting } { lstlisting }
           { \exp_not:N \protect \exp_not:N \numberline { \thelstlisting } \exp_not:V \g__betterlistings_short_tl }
-        \__betterlistings_caption_text:
       }
+    \tl_if_empty:NF \g__betterlistings_caption_tl { \__betterlistings_caption_text: }
   }
 % The caption itself. Beamer numbers a caption from its type (\beamer@makecaption, as its \caption does), other
 % classes from the label (\lst@makecaption, as listings does). Beamer's \caption does not break after it.
 \cs_new_protected:Npn \__betterlistings_caption_text:
   {
     \group_begin:
+      \str_if_eq:VnTF \g__betterlistings_captype_tl { title }
+        {
+          % As listings sets a title (\lst@MakeCaption): \lst@maketitle, in the normal font.
+          \par
+          \skip_set:Nn \abovecaptionskip { \smallskipamount }
+          \skip_set:Nn \belowcaptionskip { \smallskipamount }
+          \normalsize \normalfont
+          \exp_args:NV \lst@maketitle \g__betterlistings_caption_tl
+          \par \nobreak
+        }
+        { \__betterlistings_caption_label: }
+    \group_end:
+  }
+\cs_new_protected:Npn \__betterlistings_caption_label:
+  {
       \cs_if_exist:NTF \beamer@makecaption
         { \exp_args:NnV \beamer@makecaption { lstlisting } \g__betterlistings_caption_tl \par \nobreak }
         {
@@ -366,7 +393,6 @@
           \exp_args:NNV \lst@makecaption \fnum@lstlisting \g__betterlistings_caption_tl
           \nobreak
         }
-    \group_end:
   }
 % The lines of the block, \l__betterlistings_first_int to \l__betterlistings_last_int, if they can be told (from
 % firstline, lastline or a single linerange, and the number of lines of the file #2, counted in Lua); false if not.
@@ -434,6 +460,14 @@
     \int_set_eq:NN \l__betterlistings_number_int \c@lstnumber
     \bool_set_false:N \l__betterlistings_range_bool
     \__betterlistings_range:nnT {#1} {#3} { \bool_set_true:N \l__betterlistings_range_bool }
+    % A range of the file (linerange, firstline, lastline) is numbered by the file's lines, unless the block has
+    % its own numbering (firstnumber= other than auto).
+    \bool_set_eq:NN \l__betterlistings_autonumber_bool \l__betterlistings_range_bool
+    \regex_extract_once:nnNT { firstnumber \s* = \s* \{? \s* (\w+) } { \tl_to_str:n {#1} } \l__betterlistings_match_seq
+      {
+        \str_if_eq:eeF { \seq_item:Nn \l__betterlistings_match_seq { 2 } } { auto }
+          { \bool_set_false:N \l__betterlistings_autonumber_bool }
+      }
     \tl_if_empty:NTF \g__betterlistings_split_tl
       {
         \bool_lazy_and:nnT { \cs_if_exist_p:N \insertframenumber } { \l__betterlistings_range_bool }
@@ -583,7 +617,8 @@
 \cs_generate_variant:Nn \__betterlistings_box:nnnn { nene , eeee }
 % The tcolorbox options for a box of the block set up last: its header, if it has one, and its listings options;
 % for a box of lines #1 to #2 of a split block (#3 is #1), with those lines, numbered on from the box before
-% (firstnumber=last) except in the first box, which has the block's own numbering.
+% (firstnumber=last) except in the first box, which has the block's own numbering: from the range's first line,
+% if it is numbered by the file's lines.
 \cs_new_protected:Npn \betterlistings@block #1#2#3
   {
     \tl_if_empty:NF \l__betterlistings_title_tl
@@ -592,14 +627,29 @@
         \pgfkeysalso { betterlistings~header }
       }
     \tl_if_empty:nTF {#1}
-      { \exp_args:Ne \pgfkeysalso { listing~options = { \exp_not:V \l__betterlistings_options_tl } } }
+      {
+        \exp_args:Ne \pgfkeysalso
+          {
+            listing~options =
+              {
+                \exp_not:V \l__betterlistings_options_tl
+                \bool_if:NT \l__betterlistings_autonumber_bool
+                  { , firstnumber = \int_use:N \l__betterlistings_first_int }
+              }
+          }
+      }
       {
         \exp_args:Ne \pgfkeysalso
           {
             listing~options =
               {
                 \exp_not:V \l__betterlistings_options_tl , linerange = { #1 - #2 }
-                \int_compare:nNnF {#3} = \l__betterlistings_first_int { , firstnumber = last }
+                \int_compare:nNnTF {#3} = \l__betterlistings_first_int
+                  {
+                    \bool_if:NT \l__betterlistings_autonumber_bool
+                      { , firstnumber = \int_use:N \l__betterlistings_first_int }
+                  }
+                  { , firstnumber = last }
               }
           }
       }

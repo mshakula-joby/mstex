@@ -1,0 +1,13 @@
+% betterlistings: a range of a file is numbered by the file's lines (linerange={28-31} is numbered 28 to 31, and
+% firstline=50, lastline=52 50 to 52), unless the block has its own numbering (firstnumber=5). A title= is
+% listings' unnumbered caption, above the block; a caption= given after it wins, as in listings.
+\documentclass[aspectratio=169,10pt]{beamer}
+\usetheme{joby}
+\lstset{style=betterlisting, copynumbers=true}
+\begin{document}
+\begin{frame}{Numbers}
+	\lstinputlisting[linerange={28-31}, title={TITLE-SHOWN}]{fragments/split-100.cpp}
+	\lstinputlisting[firstline=50, lastline=52]{fragments/split-100.cpp}
+	\lstinputlisting[linerange={10-11}, firstnumber=5, title={TITLE-REPLACED}, caption={CAPTION-WINS}]{fragments/split-100.cpp}
+\end{frame}
+\end{document}
