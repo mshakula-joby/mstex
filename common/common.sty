@@ -12,6 +12,16 @@
 %       Each page is an attachment: \label inside it works, and with cleveref, \cref{<label>} reads
 %       "attachment N" and \Cref{<label>} "Attachment N" (load cleveref after the Beamer theme so that its
 %       links work), and \ref gives N.
+%
+%   \code{<code>}
+%       Inline code: <code> in \ttfamily on a rounded rectangle (a "pill") in the color "code background", with
+%       the text in "code text" if it is defined, else in the surrounding text color. A theme may define the code
+%       background (the Joby theme does, for listings too); otherwise it is a little light gray mixed into the
+%       alternate background colorAltBG, or when there is none into the theme's background (Beamer's normal text
+%       background), or into white, which darkens a light background and lightens a dark one. The line may break at a space, where a lower case letter or
+%       digit is followed by a capital, and after \_, _ or ::, without a hyphen; the pill is then closed at the
+%       end of the line and opened again on the next one. An underscore needs no escaping (\code{some_name}; \_
+%       works too); other special characters are escaped as in \texttt.
 
 \NeedsTeXFormat{LaTeX2e}
 \ProvidesPackage{common}[2026/10/18 Helpers shared by the presentations]
@@ -60,5 +70,129 @@
 	\Crefname{attachment}{Attachment}{Attachments}%
 }
 \@ifpackageloaded{cleveref}{\common@attachmentnames}{\AddToHook{package/cleveref/after}{\common@attachmentnames}}
+
+% Inline code.
+% The code is cut into chunks at its break points. Each chunk is a box on a background rule as tall as the pill,
+% and the rounded ends are TikZ caps (the \tikz command, which draft-tools keeps). Between two chunks there is a
+% \discretionary: if the line breaks there, the pre-break text closes the pill (right cap) and the post-break text
+% opens it again (left cap); if not, it is nothing, or the background-colored space between two words.
+% Neighboring pieces overlap by \l__common_code_overlap_dim, so that no hairline shows between them.
+\RequirePackage{tikz}
+\AtBeginDocument{%
+	% The base is the alternate background, else the theme's background (Beamer's normal text), else white.
+	\@ifundefinedcolor{code background}{%
+		\@ifundefinedcolor{colorAltBG}{%
+			\colorlet{common@codebase}{white}%
+			\ifdefined\usebeamercolor
+				{\usebeamercolor{normal text}\@ifundefinedcolor{normal text.bg}{}{\xglobal\colorlet{common@codebase}{normal text.bg}}}%
+			\fi
+		}{\colorlet{common@codebase}{colorAltBG}}%
+		\colorlet{code background}{black!20!white!15!common@codebase}%
+	}{}%
+	% Bookmarks and other PDF strings get the plain code.
+	\ifdefined\pdfstringdefDisableCommands\pdfstringdefDisableCommands{\let\code\@firstofone}\fi
+}
+\ExplSyntaxOn
+\dim_new:N \l__common_code_ht_dim
+\dim_new:N \l__common_code_dp_dim
+\dim_new:N \l__common_code_r_dim
+\dim_const:Nn \c__common_code_overlap_dim { 0.2pt }
+\box_new:N \l__common_code_box
+\tl_new:N \l__common_code_tl
+\seq_new:N \l__common_code_words_seq
+\seq_new:N \l__common_code_chunks_seq
+\seq_new:N \l__common_code_out_seq
+\cs_new:Npn \__common_code_sep: { }
+% The rounded ends: a quarter circle above and below, of radius \l__common_code_r_dim, on the pill's height. The
+% fill reaches into the neighboring chunk; the bounding box is the cap alone.
+\cs_new_protected:Npn \__common_code_cap:n #1
+  {
+    \tikz [ baseline = 0pt ]
+      {
+        \useasboundingbox (0pt, -\l__common_code_dp_dim) rectangle (\l__common_code_r_dim, \l__common_code_ht_dim) ;
+        \fill [ code~background ]
+          \str_if_eq:nnTF {#1} { left }
+            {
+              (\l__common_code_r_dim + \c__common_code_overlap_dim, \l__common_code_ht_dim)
+                -- (\l__common_code_r_dim, \l__common_code_ht_dim)
+                arc [ start~angle = 90, end~angle = 180, radius = \l__common_code_r_dim ]
+                -- (0pt, -\l__common_code_dp_dim + \l__common_code_r_dim)
+                arc [ start~angle = 180, end~angle = 270, radius = \l__common_code_r_dim ]
+                -- (\l__common_code_r_dim + \c__common_code_overlap_dim, -\l__common_code_dp_dim)
+            }
+            {
+              (-\c__common_code_overlap_dim, \l__common_code_ht_dim)
+                -- (0pt, \l__common_code_ht_dim)
+                arc [ start~angle = 90, end~angle = 0, radius = \l__common_code_r_dim ]
+                -- (\l__common_code_r_dim, -\l__common_code_dp_dim + \l__common_code_r_dim)
+                arc [ start~angle = 0, end~angle = -90, radius = \l__common_code_r_dim ]
+                -- (-\c__common_code_overlap_dim, -\l__common_code_dp_dim)
+            }
+          -- cycle ;
+      }
+  }
+% A box of width #1 on the background, which reaches a little into the next box.
+\cs_new_protected:Npn \__common_code_background:n #1
+  {
+    \hbox_to_wd:nn {#1}
+      {
+        \hbox_overlap_right:n
+          {
+            \color { code~background }
+            \tex_vrule:D height \l__common_code_ht_dim depth \l__common_code_dp_dim
+              width \dim_eval:n { #1 + \c__common_code_overlap_dim }
+          }
+        \tex_hss:D
+      }
+  }
+\cs_new_protected:Npn \__common_code_chunk:n #1
+  {
+    \hbox_set:Nn \l__common_code_box {#1}
+    \hbox:n
+      {
+        \hbox_overlap_right:n { \__common_code_background:n { \box_wd:N \l__common_code_box } }
+        \box_use_drop:N \l__common_code_box
+      }
+  }
+\cs_new_protected:Npn \__common_code_break:n #1
+  {
+    \tex_discretionary:D
+      { \hbox:n { \__common_code_cap:n { right } } }
+      { \hbox:n { \__common_code_cap:n { left } } }
+      {#1}
+  }
+\cs_new_protected:Npn \__common_code_word:n #1
+  {
+    \tl_set:Nn \l__common_code_tl {#1}
+    \regex_replace_all:nnN { ([a-z0-9])([A-Z]) } { \1 \c{__common_code_sep:} \2 } \l__common_code_tl
+    \regex_replace_all:nnN { (\c{_}|_|::) } { \1 \c{__common_code_sep:} } \l__common_code_tl
+    \seq_set_split:NnV \l__common_code_chunks_seq { \__common_code_sep: } \l__common_code_tl
+    \seq_remove_all:Nn \l__common_code_chunks_seq { }
+    \seq_set_map:NNn \l__common_code_out_seq \l__common_code_chunks_seq { \__common_code_chunk:n {##1} }
+    \seq_use:Nn \l__common_code_out_seq { \__common_code_break:n { } }
+  }
+\NewDocumentCommand \code { m }
+  {
+    \mode_leave_vertical:
+    \group_begin:
+      \ttfamily
+      \@ifundefinedcolor { code~text } { } { \color { code~text } }
+      % The pill is as tall as a parenthesis, the tallest and deepest common glyph, plus a little.
+      \dim_set:Nn \l__common_code_ht_dim { \fontcharht \font `( + 0.1em }
+      \dim_set:Nn \l__common_code_dp_dim { \fontchardp \font `( + 0.1em }
+      \dim_set:Nn \l__common_code_r_dim { 0.15em }
+      % A bare _ (a subscript character) becomes a printable one.
+      \tl_set:Nn \l__common_code_tl {#1}
+      \regex_replace_all:nnN { \cD\_ } { \cO\_ } \l__common_code_tl
+      \seq_set_split:NnV \l__common_code_words_seq { ~ } \l__common_code_tl
+      \seq_remove_all:Nn \l__common_code_words_seq { }
+      \seq_set_map:NNn \l__common_code_out_seq \l__common_code_words_seq { \__common_code_word:n {##1} }
+      \__common_code_cap:n { left }
+      \seq_use:Nn \l__common_code_out_seq
+        { \__common_code_break:n { \hbox:n { \__common_code_background:n { \fontdimen 2 \font } } } }
+      \__common_code_cap:n { right }
+    \group_end:
+  }
+\ExplSyntaxOff
 
 \endinput

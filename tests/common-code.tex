@@ -1,0 +1,16 @@
+% \code (common): inline code on an accent pill that may break across lines, at its capitals, after :: and _, and
+% at spaces, without a hyphen. It is also used in a section title (PDF bookmark) and with draftpics.
+\documentclass[aspectratio=43,9pt]{beamer}
+\usetheme{joby}
+\usepackage{common}
+\usepackage[draftpics]{draft-tools}
+\title{Code}
+\author{Test Author}
+\begin{document}
+\section{About \code{CSectionName}}
+\begin{frame}{Code}
+	Short \code{CMessage::Send()} and words \code{some\_name and more}, \code{bare_under_score}.
+
+	\parbox{0.4\linewidth}{Long \code{CInputSignalManagementTelemetryBase::DoSomething()}}
+\end{frame}
+\end{document}

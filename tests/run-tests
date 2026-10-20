@@ -219,6 +219,60 @@ PY
 		joby-titlepage-noinstitute)
 			expect_text "AUTHOR-WORD" "$name"; expect_text "DATE-WORD" "$name"; expect_no_text "Joby Aviation" "$name"
 			;;
+		common-code-fallback)
+			# The pills are 15% light gray (black!20, CCCCCC) mixed into the slide background, here lighter than it.
+			pdftoppm -r 100 -f 1 -l 1 -png "build/$name.pdf" "build/$name-img"
+			python3 -I - build/$name-img-*.png <<'PY' && pass "$name pills mix light gray into the theme background" || fail "$name pills mix light gray into the theme background"
+import sys
+from PIL import Image
+im = Image.open(sys.argv[1]).convert("RGB")
+w, h = im.size
+bg = im.getpixel((3, h // 2))
+code = tuple(round(0.15 * 0xCC + 0.85 * c) for c in bg)
+n = sum(1 for p in im.getdata() if sum(abs(a - b) for a, b in zip(p, code)) < 4)
+sys.exit(0 if sum(code) > sum(bg) and n > 1000 else 1)
+PY
+			;;
+		common-code)
+			grep -q '^Overfull \\hbox' "build/$name.log" && fail "$name code fits the line" || pass "$name code fits the line"
+			grep -q 'Token not allowed' "build/$name.log" && fail "$name code in a section title makes a clean bookmark" || pass "$name code in a section title makes a clean bookmark"
+			# Broken without a hyphen: the pieces are all there, and the long name continues on the next line.
+			pdftotext "build/$name.pdf" - | tr -d '\n' | grep -q "CInputSignalManagementTelemetryBase::DoSomething()" && pass "$name the long name is kept whole (no hyphen)" || fail "$name the long name is kept whole (no hyphen)"
+			expect_text "some_name and more" "$name"; expect_text "bare_under_score" "$name"
+			pg=$(for p in 1 2 3; do pdftotext -f $p -l $p "build/$name.pdf" - | grep -q "^Short" && echo $p && break; done)
+			pdftotext -f $pg -l $pg -bbox "build/$name.pdf" "build/$name.bbox.html"
+			python3 -I - "build/$name.bbox.html" <<'PY' && pass "$name the long name wraps onto the next line" || fail "$name the long name wraps onto the next line"
+import re, sys
+words = re.findall(r'yMin="([\d.]+)" xMax="[\d.]+" yMax="[\d.]+">([^<]*)<', open(sys.argv[1]).read())
+first = [float(y) for y, w in words if "CInput" in w]
+last = [float(y) for y, w in words if "Something()" in w]
+sys.exit(0 if first and last and last[0] > first[0] + 5 else 1)
+PY
+			# The pills are on the code background: 15% Joby Gray (CDD0D1) in Joby Off-White (F5F4DF), the alternate
+			# background of the default palette.
+			pdftoppm -r 100 -f $pg -l $pg -png "build/$name.pdf" "build/$name-pill"
+			python3 -I - build/$name-pill-*.png <<'PY' && pass "$name code is on code background pills" || fail "$name code is on code background pills"
+import sys
+from PIL import Image
+im = Image.open(sys.argv[1]).convert("RGB")
+code = tuple(round(0.15 * g + 0.85 * w) for g, w in zip((0xCD, 0xD0, 0xD1), (0xF5, 0xF4, 0xDF)))
+n = sum(1 for p in im.getdata() if sum(abs(a - b) for a, b in zip(p, code)) < 4)
+sys.exit(0 if n > 2000 else 1)
+PY
+			;;
+		joby-listings-after)
+			# Orange palette: the block is on the code background (15% Joby Gray in Joby Off-White), framed in the
+			# accent color (Joby Yellow, FFB300).
+			pdftoppm -r 100 -f 1 -l 1 -png "build/$name.pdf" "build/$name-img"
+			python3 -I - build/$name-img-*.png <<'PY' && pass "$name block is on the code background with an accent frame" || fail "$name block is on the code background with an accent frame"
+import sys
+from PIL import Image
+px = list(Image.open(sys.argv[1]).convert("RGB").getdata())
+near = lambda c, t: sum(1 for p in px if sum(abs(a - b) for a, b in zip(p, c)) < t)
+code = tuple(round(0.15 * g + 0.85 * w) for g, w in zip((0xCD, 0xD0, 0xD1), (0xF5, 0xF4, 0xDF)))
+sys.exit(0 if near(code, 4) > 5000 and near((0xFF, 0xB3, 0x00), 60) > 200 else 1)
+PY
+			;;
 		common)
 			expect_text "FIRST-SLIDE" "$name"; expect_text "FULL-PAGE-WORD" "$name"; expect_text "SECOND-SLIDE" "$name"; expect_text "SECOND-ATTACHMENT-WORD" "$name"
 			[ "$(pdfinfo "build/$name.pdf" | awk '/Pages/{print $2}')" = 4 ] && pass "$name has two slides and two full pages" || fail "$name has two slides and two full pages"

@@ -1,12 +1,13 @@
-% rbd-support in 4:3: a ticket title with a long code name in \texttt breaks inside the name (at its capitals)
+% rbd-support in 4:3: a ticket title with a long code name in \code (common) breaks inside the name (at its capitals)
 % instead of overflowing the description column.
 \documentclass[aspectratio=43,9pt]{beamer}
 \usetheme{joby}
 \usepackage{rbd-support}
+\usepackage{common}
 \setjirabaseurl{https://jira.example.com/browse/}
 \setgithubpullbaseurl{https://git.example.com/pull/}
-\addjirainfo[59907]{S4TC-88097}{Prune Dynamic Allocations from \texttt{CInputSignalManagementTelemetryBase}}
-\addjirainfo{S4TC-83886}{Fix Shared Memory Issues Caused By \texttt{CMessagePort} and \texttt{ns::Some\_LongerName\_Here}}
+\addjirainfo[59907]{S4TC-88097}{Prune Dynamic Allocations from \code{CInputSignalManagementTelemetryBase}}
+\addjirainfo{S4TC-83886}{Fix Shared Memory Issues Caused By \code{CMessagePort} and \code{ns::Some_LongerName_Here}}
 \title{Narrow}
 \author{Test Author}
 \begin{document}
