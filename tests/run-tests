@@ -320,6 +320,11 @@ for w, h, body in pages:
     expect = lines[-1] + 1
     assert max(y for y, t in words if re.fullmatch(r"LINE\d{3}", t)) < 0.93 * float(h), "past the footer"
 assert expect == 101, expect
+# The line numbers start at 1 (firstnumber=last, the first listing): the first box's smallest number is 1.
+for w, h, body in pages:
+    if "LINE001" in body:
+        nums = [int(t) for t in re.findall(r'>(\d+)<', body)]
+        assert min(nums) == 1, ("numbers start at", min(nums))
 # The caption is on the slide of the first box, above it.
 cap = [(i, float(y)) for i, (w, h, body) in enumerate(pages) for y, t in re.findall(r'yMin="([\d.]+)" xMax="[\d.]+" yMax="[\d.]+">([^<]*)<', body) if t == "SPLIT-CAPTION"]
 first = [(i, float(y)) for i, (w, h, body) in enumerate(pages) for y, t in re.findall(r'yMin="([\d.]+)" xMax="[\d.]+" yMax="[\d.]+">([^<]*)<', body) if t == "LINE001"]

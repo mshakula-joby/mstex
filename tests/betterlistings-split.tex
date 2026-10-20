@@ -1,6 +1,7 @@
 % betterlistings in Beamer: a block longer than a slide (100 lines) is split into boxes that each fit a slide,
 % with the line numbers going on, on consecutive slides of an allowframebreaks frame; its caption, numbered, is
-% above the first box, also in a list after some text (the caption moves to the next slide with the box).
+% above the first box, also in a list after some text (the caption moves to the next slide with the box). With
+% firstnumber=last, the first listing's numbers start at 1 (measuring the block does not count).
 \documentclass[aspectratio=43,10pt]{beamer}
 \usetheme{joby}
 \lstset{style=betterlisting}
@@ -9,7 +10,7 @@
 	\begin{itemize}
 		\item An item with some text before the listing, which the first box does not fit under, so the caption
 		has to move with it.
-		\lstinputlisting[file=src/split.cpp, title={SPLIT-CAPTION}]{fragments/split-100.cpp}
+		\lstinputlisting[file=src/split.cpp, title={SPLIT-CAPTION}, firstnumber=last]{fragments/split-100.cpp}
 	\end{itemize}
 \end{frame}
 \end{document}
