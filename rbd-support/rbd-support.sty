@@ -105,6 +105,20 @@
 % break across frames (a tabular could not).
 % One "GitHub:" line for each URL in the comma-separated list.
 \newcommand{\jirasupportgithubline}[1]{\\GitHub: \edef\jirasupportpullurl{\jirasupportgithubbase#1}\href{\jirasupportpullurl}{\expandafter\nolinkurl\expandafter{\jirasupportpullurl}}}
+% Code names in a ticket title (\texttt{CInputSignalManagementTelemetryBase}) are one long word with no place to
+% break, which overflows the narrow description column. In the table, \texttt may break such a name where a lower
+% case letter or digit is followed by a capital, and after \_ or ::, without a hyphen (which would change the name).
+\ExplSyntaxOn
+\tl_new:N \l__jirasupport_tt_tl
+\cs_new_protected:Npn \jirasupportbreakabletexttt #1
+  {
+    \tl_set:Nn \l__jirasupport_tt_tl {#1}
+    \regex_replace_all:nnN { ([a-z0-9])([A-Z]) } { \1 \c{allowbreak} \2 } \l__jirasupport_tt_tl
+    \regex_replace_all:nnN { (\c{_}|_|::) } { \1 \c{allowbreak} } \l__jirasupport_tt_tl
+    { \ttfamily \tl_use:N \l__jirasupport_tt_tl }
+  }
+\ExplSyntaxOff
+
 \newglossarystyle{jiratable}{%
 	\renewenvironment{theglossary}{\par\small}{\par}%
 	\renewcommand*{\glossaryheader}{%
@@ -115,7 +129,7 @@
 		\edef\jirasupporturl{\jirasupportjirabase\glsentryuseri{##1}}%
 		\edef\jirasupportgithub{\glsentryuserii{##1}}%
 		\noindent\parbox[t]{0.14\linewidth}{\texttt{\glsentryshort{##1}}}\hfill
-		\parbox[t]{0.36\linewidth}{\raggedright\glsentrylong{##1}}\hfill
+		\parbox[t]{0.36\linewidth}{\raggedright\let\texttt\jirasupportbreakabletexttt\glsentrylong{##1}}\hfill
 		\parbox[t]{0.46\linewidth}{\raggedright\scriptsize
 			Jira: \href{\jirasupporturl}{\expandafter\nolinkurl\expandafter{\jirasupporturl}}%
 			\ifdefempty{\jirasupportgithub}{}{\expandafter\forcsvlist\expandafter{\expandafter\jirasupportgithubline\expandafter}\expandafter{\jirasupportgithub}}%

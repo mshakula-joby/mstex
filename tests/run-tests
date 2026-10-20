@@ -346,6 +346,12 @@ assert abs(h["4"] - h["1"]) < 0.5, "allowframebreaks: %s" % h["4"]
 assert h["2"] < h["1"] < h["3"]
 PY
 			;;
+		rbd-support-43)
+			grep -q '^Overfull \\hbox' "build/$name.log" && fail "$name ticket titles fit their column in 4:3" || pass "$name ticket titles fit their column in 4:3"
+			# The code name is broken inside (no hyphen), so its pieces are on separate lines but all there.
+			pdftotext "build/$name.pdf" - | tr -d '\n' | grep -q "CInputSignalManagementTelemetryBase" && pass "$name the code name is kept whole (no hyphen)" || fail "$name the code name is kept whole (no hyphen)"
+			expect_no_text "CInput-" "$name"
+			;;
 		joby-captions)
 			pdftotext -bbox "build/$name.pdf" "build/$name.bbox.html"
 			python3 -I - "build/$name.bbox.html" <<'PY' && pass "$name captions and their labels are smaller than the body text" || fail "$name captions and their labels are smaller than the body text"
