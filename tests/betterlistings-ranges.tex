@@ -1,0 +1,11 @@
+% betterlistings with several ranges (linerange={2-4, 40-95}): the block splits over slides like a single range, and
+% the line numbers are those of the file, skipping across the gap (2 to 4, then 40 to 95). (copynumbers=true keeps
+% the numbers in the text, to read them.)
+\documentclass[aspectratio=43,10pt]{beamer}
+\usetheme{joby}
+\lstset{style=betterlisting}
+\begin{document}
+\begin{frame}[allowframebreaks]{Ranges}
+	\lstinputlisting[file=src/split.cpp, caption={RANGES-CAPTION}, linerange={2-4, 40-99}, copynumbers=true]{fragments/split-100.cpp}
+\end{frame}
+\end{document}

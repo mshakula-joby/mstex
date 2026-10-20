@@ -300,6 +300,31 @@ code = tuple(round(255 * c) for c in colorsys.hsv_to_rgb(hh, s / 4, 0.9 * v))
 sys.exit(0 if sum(1 for p in px if sum(abs(a - b) for a, b in zip(p, code)) < 4) < 50 else 1)
 PY
 			;;
+		betterlistings-ranges)
+			# Several ranges: split over slides, numbered by the file's lines (2 to 4, then 40 to 99), the gap skipped.
+			n=$(pdfinfo "build/$name.pdf" | awk '/Pages/{print $2}')
+			[ "$n" -ge 2 ] && pass "$name the block is split over $n slides" || fail "$name the block is split over slides ($n)"
+			expect_text "Listing 1: RANGES-CAPTION" "$name"; expect_text "LINE002" "$name"; expect_text "LINE099" "$name"
+			pdftotext -bbox "build/$name.pdf" "build/$name.bbox.html"
+			python3 -I - "build/$name.bbox.html" <<'PY' && pass "$name numbers are the file's lines, and every box fits its slide" || fail "$name numbers are the file's lines, and every box fits its slide"
+import re, sys
+html = open(sys.argv[1]).read()
+pages = re.findall(r'<page width="([\d.]+)" height="([\d.]+)">(.*?)</page>', html, re.S)
+want = [2, 3, 4] + list(range(40, 100))
+nums, texts = [], []
+for w, h, body in pages:
+    words = re.findall(r'yMax="([\d.]+)">([^<]*)<', body)
+    code = [int(t[4:]) for y, t in words if re.fullmatch(r"LINE\d{3}", t)]
+    texts += code
+    if code:
+        assert max(float(y) for y, t in words if re.fullmatch(r"LINE\d{3}", t)) < 0.93 * float(h), "past the footer"
+    # The line numbers shown: the numbers on the page that are not the code's (those are LINEnnn words).
+    # (The last number on a slide is the slide's own.)
+    nums += [int(t) for y, t in words if re.fullmatch(r"\d+", t)][:-1]
+assert texts == want, texts
+assert nums == want, nums[:8]
+PY
+			;;
 		betterlistings-split)
 			# Several slides; each slide's numbers go on from the last; the caption is above the first box; the code
 			# stays above the footer on every slide.
