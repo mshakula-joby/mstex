@@ -234,7 +234,25 @@ PY
 			;;
 		joby-toc)
 			p2=$(pdftotext -f 2 -l 2 "build/$name.pdf" -)
-			for n in i 1 3 6; do grep -qx "$n" <<<"$p2" && pass "$name outline page shows '$n'" || fail "$name outline page shows '$n'"; done ;;
+			for n in i 1 3 6; do grep -qx "$n" <<<"$p2" && pass "$name outline page shows '$n'" || fail "$name outline page shows '$n'"; done
+			# The title page (page 1) has the accent bar along the top, as tall as on the section heading slide (page 3).
+			pdftoppm -r 300 -f 1 -l 1 -png "build/$name.pdf" "build/$name-bar1"
+			pdftoppm -r 300 -f 3 -l 3 -png "build/$name.pdf" "build/$name-bar3"
+			python3 -I - build/$name-bar1-*.png build/$name-bar3-*.png <<'PY' && pass "$name title page has the accent bar of the heading slides" || fail "$name title page has the accent bar of the heading slides"
+import sys
+from PIL import Image
+def bar_rows(path):
+	im = Image.open(path).convert("RGB")
+	w, h = im.size
+	bg = im.getpixel((3, h // 2))
+	n = 0
+	while sum(abs(a - b) for a, b in zip(im.getpixel((w // 2, n)), bg)) > 30:
+		n += 1
+	return n
+title, heading = map(bar_rows, sys.argv[1:3])
+sys.exit(0 if title > 5 and abs(title - heading) <= 1 else 1)
+PY
+			;;
 		joby-proprietary)
 			expect_no_text "Legal Disclaimers" "$name"
 			expect_text "is Joby Aviation Proprietary." "$name"
@@ -432,9 +450,30 @@ PY
 			expect_text "missing-image.png" "$name"; expect_text "TikZ picture" "$name"
 			expect_text "draft-tools-pics-inner.tex:1" "$name"; expect_text "draft-tools-pics.tex:12" "$name"
 			expect_no_text "DROPPED-NODE" "$name"; expect_no_text "DROPPED-INNER" "$name"; expect_no_text "DROPPED-PLOT" "$name"
-			expect_text "KEPT-OVERLAY" "$name"; expect_text "KEPT-INLINE" "$name"; expect_text "KEPT-ICON" "$name" ;;
+			expect_text "KEPT-OVERLAY" "$name"; expect_text "KEPT-INLINE" "$name"; expect_text "KEPT-ICON" "$name"
+			# The kept overlay keeps its options: it is placed at (current page.center).
+			pdftotext -f 1 -l 1 -bbox "build/$name.pdf" "build/$name.bbox.html"
+			python3 -I - "build/$name.bbox.html" <<'PY' && pass "$name overlay is at the page center" || fail "$name overlay is at the page center"
+import re, sys
+html = open(sys.argv[1]).read()
+W, H = (float(re.search(r'%s="([\d.]+)"' % k, html).group(1)) for k in ("width", "height"))
+a, b, c, d = map(float, re.search(r'xMin="([\d.]+)" yMin="([\d.]+)" xMax="([\d.]+)" yMax="([\d.]+)">KEPT-OVERLAY<', html).groups())
+sys.exit(0 if abs((a + c) / 2 - W / 2) < 3 and abs((b + d) / 2 - H / 2) < 3 else 1)
+PY
+			;;
 		joby-draftpics)
-			expect_text "some-figure.pdf" "$name"; expect_text "TikZ picture" "$name"; expect_no_text "DROPPED-IN-FRAME" "$name" ;;
+			expect_text "some-figure.pdf" "$name"; expect_text "TikZ picture" "$name"; expect_no_text "DROPPED-IN-FRAME" "$name"
+			# The title page logo stays centered at the bottom of the page.
+			pdftoppm -r 40 -f 1 -l 1 -png "build/$name.pdf" "build/$name-logo"
+			python3 -I - "$(ls build/$name-logo-*.png | head -1)" <<'PY' && pass "$name title page logo is centered" || fail "$name title page logo is centered"
+import sys
+from PIL import Image
+im = Image.open(sys.argv[1]).convert("RGB")
+w, h = im.size
+xs = [x for y in range(int(h * 0.7), h) for x in range(w) if (lambda p: p[2] - p[0] > 80)(im.getpixel((x, y)))]
+sys.exit(0 if xs and abs(sum(xs) / len(xs) - w / 2) < 0.03 * w else 1)
+PY
+			;;
 		draft-tools-final)
 			expect_text "a drafting note" "$name"; expect_no_text "an idea" "$name"; expect_no_text "some directions" "$name"
 			expect_text "[spaced out]" "$name" ;;

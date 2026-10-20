@@ -129,7 +129,8 @@
       {
         \group_begin:
           \bool_set_false:N \l__draft_tikz_skipend_bool
-          \__draft_tikzpicture_orig: \tl_use:N \g__draft_tikz_body_tl \__draft_endtikzpicture_orig:
+          % The body is expanded first, so that \tikzpicture sees its options ([remember picture, overlay]).
+          \exp_after:wN \__draft_tikzpicture_orig: \g__draft_tikz_body_tl \__draft_endtikzpicture_orig:
         \group_end:
       }
       {

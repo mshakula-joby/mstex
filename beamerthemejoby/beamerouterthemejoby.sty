@@ -58,6 +58,7 @@
 \newcommand{\jobytitlerevision}{}
 \renewcommand{\gothamtitlepagelogo}{%
 	\begin{tikzpicture}[remember picture, overlay]
+		\jobytopbar
 		\node at ([xshift=1.5pt, yshift=6ex]current page.south) {\jobymark[6ex]{JobyBlue}};
 		\ifx\jobytitlerevision\@empty\else
 			\node[anchor=south east, text=JobyDarkGray, font=\tiny]
@@ -120,9 +121,11 @@
 
 % A thin bar in the accent color along the top of the "plain" slides, the ones without a title bar:
 % the heading slides (part, section, subsection, subsubsection) and the proprietary notice slide.
+% The title page has it too, drawn with its logo (Gotham's title page covers the background).
+\newcommand{\jobytopbar}{\fill[colorAccent] (current page.north west) rectangle ([yshift=-1.2mm]current page.north east);}
 \defbeamertemplate{background}{joby bar}{%
 	\begin{tikzpicture}[remember picture, overlay]
-		\fill[colorAccent] (current page.north west) rectangle ([yshift=-1.2mm]current page.north east);
+		\jobytopbar
 	\end{tikzpicture}%
 }
 \newenvironment{jobybarenv}{\setbeamertemplate{background}[joby bar]}{}
