@@ -1,0 +1,13 @@
+% betterlistings with draft-tools' draftpics: listings are tcolorboxes, which draw with TikZ pictures; those stay
+% real (they are not document pictures to replace), so the block and its code are there.
+\documentclass[aspectratio=169,10pt]{beamer}
+\usetheme{joby}
+\usepackage[draftpics]{draft-tools}
+\begin{document}
+\begin{frame}[fragile]{Draft}
+	\begin{lstlisting}[file=src/DRAFT_PATH.cpp]
+int DRAFT_CODE = 0;
+	\end{lstlisting}
+	\begin{tikzpicture}\node{DROPPED-PICTURE};\end{tikzpicture}
+\end{frame}
+\end{document}

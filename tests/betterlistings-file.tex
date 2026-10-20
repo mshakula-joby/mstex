@@ -1,20 +1,25 @@
-% betterlistings: file=<path> shows the path as a header strip across the top of a listing, inside its frame and
-% as wide as it, also in a list (where the block is indented); a listing without it has no strip.
+% betterlistings: the block header. file=<path> gives a header with the language (from the extension) and the
+% path, which wraps when it is too long for the box; language= alone gives a header with the language; a block
+% with neither has no header.
 \documentclass[aspectratio=169,10pt]{beamer}
 \usetheme{joby}
 \begin{document}
 \begin{frame}[fragile]{File}
-	\begin{lstlisting}[file=src/fcc/MAIN_PATH.cpp]
+	\begin{minipage}[t]{0.45\linewidth}
+		\begin{lstlisting}[file=src/flight_software/algorithm_core/directory/WRAPPED_PATH_entry_point.cpp]
 int main() { return 0; }
-	\end{lstlisting}
-	\begin{itemize}
-		\item In a list:
-		\begin{lstlisting}[file=src/fcc/LIST_PATH.cpp]
-int x = 1;
 		\end{lstlisting}
-	\end{itemize}
-	\begin{lstlisting}
-int NO_FILE = 2;
-	\end{lstlisting}
+		\begin{lstlisting}
+int NO_HEADER = 2;
+		\end{lstlisting}
+	\end{minipage}\hfill
+	\begin{minipage}[t]{0.45\linewidth}
+		\begin{lstlisting}[file=src/SHORT_PATH.py]
+x = 1
+		\end{lstlisting}
+		\begin{lstlisting}[language=bash]
+echo LANGUAGE_ONLY
+		\end{lstlisting}
+	\end{minipage}
 \end{frame}
 \end{document}

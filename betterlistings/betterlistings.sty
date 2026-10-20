@@ -1,19 +1,26 @@
 % betterlistings.sty
 %
 % Code in slides and documents, with one look for blocks (listings, and minted when it is loaded) and inline
-% code. Loads listings and xcolor. Works with any class; with Beamer, captions use its caption font and the code
-% its normal text color.
+% code. Loads listings, tcolorbox and xcolor. Works with any class; with Beamer, captions use its caption font
+% and the code its normal text color.
 %
 %   Code blocks
-%       listings (and minted) blocks are in \ttfamily at \betterlistingssize, on the color "code background",
-%       framed by a hairline in "code frame", with a little margin, and break long lines.
+%       \begin{lstlisting}[<options>] ... \end{lstlisting} and \lstinputlisting[<options>]{<file>} (the same
+%       commands and listings options as always) are boxes with rounded corners on the color "code background",
+%       with a hairline border in "code frame", that break across pages and frames (allowframebreaks). The code
+%       is in \ttfamily at \betterlistingssize, highlighted (bold keywords in "code keyword", strings in "code
+%       string", comments in "code comment"), with line numbers in "code number", and long lines break with an
+%       arrow. The language comes from the file's extension (file=, or the input file's name; C++, Python,
+%       Java, bash, Lua, LaTeX and others), else \betterlistingsdefaultlanguage (C++); language= overrides it.
+%       Captions (caption=) are kept, in the box.
+%   file=<path>
+%       A listings key: the block gets a header on "code header" with the language, in bold, and <path> in
+%       \ttfamily, which wraps after / _ . and - (\begin{lstlisting}[file=src/main.cpp] ...,
+%       \lstinputlisting[file=src/main.cpp]{listings/main.cpp}). A block with language= gets the header too,
+%       with the language only.
 %   \betterlistingssize
 %       The font size of code blocks: empty (the surrounding size) unless redefined (the Joby theme makes it
-%       \scriptsize).
-%   file=<path>
-%       A listings key: <path> is shown in \ttfamily as a header strip across the top of the block, on "code
-%       header", inside the block's frame (\begin{lstlisting}[file=src/main.cpp] ...,
-%       \lstinputlisting[file=src/main.cpp]{listings/main.cpp}). Blocks without it are unchanged.
+%       \tiny).
 %   \code{<code>}
 %       Inline code: <code> in \ttfamily on a rounded rectangle (a "pill") in "code background", with the text in
 %       "code text" if it is defined, else in the surrounding text color. The line may break at a space, where a
@@ -30,7 +37,8 @@
 %       background colorAltBG, or when there is none from the theme's background (Beamer's normal text
 %       background), or from white: the same hue with a quarter of the saturation, a step darker, or a step
 %       lighter if it is dark. "code header" is a step further, and "code frame" is colorAccent, or a step
-%       further again.
+%       further again. The highlighting colors are mixed with the text color ("code text", Beamer's normal text
+%       color or black), so they read on light and dark backgrounds.
 %
 % With cleveref's hyperref support on (as the Joby theme has it), cleveref's listings hooks make
 % \cref@currentprefix expand to itself, and the first listing loops forever; this package sets the listings'
@@ -53,19 +61,19 @@
   {
     \extractcolorspecs {#1} \l__betterlistings_model_tl \l__betterlistings_spec_tl
     \convertcolorspec \l__betterlistings_model_tl \l__betterlistings_spec_tl { hsb } \l__betterlistings_hsb_tl
-    \use:e
+    \tl_set:Ne \l__betterlistings_hsb_tl
       {
-        \exp_not:N \definecolor {#2} { hsb }
+        \clist_item:Nn \l__betterlistings_hsb_tl { 1 } ,
+        \fp_eval:n { #3 * \clist_item:Nn \l__betterlistings_hsb_tl { 2 } } ,
+        \fp_eval:n
           {
-            \clist_item:Nn \l__betterlistings_hsb_tl { 1 } ,
-            \fp_eval:n { #3 * \clist_item:Nn \l__betterlistings_hsb_tl { 2 } } ,
-            \fp_eval:n
-              {
-                \fp_compare:nNnTF { \clist_item:Nn \l__betterlistings_hsb_tl { 3 } } < { 0.5 }
-                  { 0.1 + 0.9 * } { 0.9 * } \clist_item:Nn \l__betterlistings_hsb_tl { 3 }
-              }
+            \fp_compare:nNnTF { \clist_item:Nn \l__betterlistings_hsb_tl { 3 } } < { 0.5 }
+              { 0.1 + 0.9 * } { 0.9 * } \clist_item:Nn \l__betterlistings_hsb_tl { 3 }
           }
       }
+    % Defined in rgb: TikZ (tcolorbox) does not take hsb.
+    \convertcolorspec { hsb } \l__betterlistings_hsb_tl { rgb } \l__betterlistings_spec_tl
+    \definecolor {#2} { rgb } { \l__betterlistings_spec_tl }
   }
 \cs_new_protected:Npn \__betterlistings_colors:
   {
@@ -97,7 +105,30 @@
           { \colorlet { code~frame } { colorAccent } }
       }
       { }
+    % The text color, as a color: "code text", else Beamer's normal text color, else black.
+    \@ifundefinedcolor { code~text }
+      {
+        \colorlet { betterlistings@fg } { black }
+        \cs_if_exist:NT \usebeamercolor
+          {
+            \group_begin:
+              \usebeamercolor { normal~text }
+              \@ifundefinedcolor { normal~text.fg } { }
+                { \xglobal \colorlet { betterlistings@fg } { normal~text.fg } }
+            \group_end:
+          }
+      }
+      { \colorlet { betterlistings@fg } { code~text } }
+    % Highlighting, mixed with the text color so that it reads on light and dark backgrounds alike.
+    \@ifundefinedcolor { code~keyword } { \colorlet { code~keyword } { blue!65!betterlistings@fg } } { }
+    \@ifundefinedcolor { code~string } { \colorlet { code~string } { green!55!betterlistings@fg } } { }
+    \@ifundefinedcolor { code~comment }
+      { \colorlet { code~comment } { betterlistings@fg!55!code~background } } { }
+    \@ifundefinedcolor { code~number }
+      { \colorlet { code~number } { betterlistings@fg!40!code~background } } { }
+    \hbox_gset:Nn \betterlistings@arrow { \betterlistingssize \color { code~comment } $ \hookrightarrow $ }
   }
+\box_new:N \betterlistings@arrow
 % The text color of code: "code text", else Beamer's normal text color, else the surrounding one.
 \cs_new_protected:Npn \betterlistings@textcolor
   {
@@ -109,20 +140,32 @@
 \AtBeginDocument{\csname __betterlistings_colors:\endcsname}
 
 % --- Code blocks ------------------------------------------------------------------------------------------
+% A block is a tcolorbox (breakable, rounded, on the code background, with a hairline border in the code frame
+% color) with the listing inside it, without a frame or background of its own: listings paints its background
+% line by line, which viewers show with seams. lstlisting is redefined as a tcolorbox listing, and
+% \lstinputlisting as one too, except inside such a box, where tcolorbox itself calls \lstinputlisting.
+\RequirePackage{tcolorbox}
+\tcbuselibrary{listings,breakable,skins}
 \newcommand{\betterlistingssize}{}
+\newcommand{\betterlistingsdefaultlanguage}{C++}
 \lstset{
 	basicstyle=\ttfamily\betterlistingssize\betterlistings@textcolor,
-	backgroundcolor=\color{code background},
-	frame=single,
-	framerule=0.3pt,
-	rulecolor=\color{code frame},
-	framexleftmargin=1ex,
-	framexrightmargin=1ex,
-	framextopmargin=1ex,
-	framexbottommargin=1ex,
-	xleftmargin=1ex,
-	xrightmargin=1ex,
+	keywordstyle=\bfseries\color{code keyword},
+	stringstyle=\color{code string},
+	commentstyle=\color{code comment},
+	numbers=left,
+	numberstyle=\tiny\color{code number},
+	numbersep=1em,
+	xleftmargin=1.6em,
+	% The box has the padding.
+	aboveskip=0pt,
+	belowskip=0pt,
+	tabsize=4,
+	upquote=true,
 	breaklines=true,
+	% (A color change in postbreak breaks the line, at least in Beamer, whose \color looks ahead for an overlay
+	% specification: the arrow is made beforehand, in a box.)
+	postbreak=\mbox{\usebox\betterlistings@arrow\space},
 	showstringspaces=false,
 	columns=fullflexible,
 	keepspaces=true,
@@ -133,80 +176,110 @@
 	\long\def\lst@makecaption#1#2{{\usebeamerfont{caption}\betterlistings@lstmakecaption{#1}{#2}}}%
 }{}
 
-% The file key. A block with a file has the path as its title, shown as the header strip (\lst@maketitle is
-% redefined below), no gap after the title, and its frame open at the top: the strip's bottom rule closes it.
-\newcommand{\betterlistings@file}{}
-\lst@Key{file}{}{%
-	% The path is literal (it may have _ in it).
-	\edef\betterlistings@file{\detokenize{#1}}%
-	\ifx\betterlistings@file\@empty\else
-		\def\lst@title{\betterlistings@file}\let\lst@caption\relax
-		\def\lst@frame{rbl}\expandafter\lstframe@\lst@frameround ffff\relax
-		\def\lst@belowcaption{0pt}%
+% file=<path>: listings ignores it; the block's options are read once beforehand to find it (and the language).
+\lst@Key{file}{}{\gdef\betterlistings@file{#1}}
+\newif\ifbetterlistings@inbox
+\ExplSyntaxOn
+\tl_new:N \l__betterlistings_lang_tl
+\tl_new:N \l__betterlistings_title_tl
+\tl_new:N \l__betterlistings_options_tl
+% The language for a file name: from its extension, else the default.
+\cs_new_protected:Npn \__betterlistings_language:n #1
+  {
+    \tl_set:Ne \l__betterlistings_lang_tl { \tl_to_str:n {#1} }
+    \regex_replace_once:nnNF { \A .* \. ([^./]+) \Z } { \1 } \l__betterlistings_lang_tl
+      { \tl_clear:N \l__betterlistings_lang_tl }
+    \tl_set:Ne \l__betterlistings_lang_tl
+      {
+        \str_case_e:nnF { \str_lowercase:f { \l__betterlistings_lang_tl } }
+          {
+            { c } { C++ } { h } { C++ } { cc } { C++ } { cpp } { C++ } { cxx } { C++ } { hh } { C++ }
+            { hpp } { C++ } { hxx } { C++ } { ino } { C++ } { java } { Java } { py } { Python }
+            { sh } { bash } { bash } { bash } { lua } { [5.3]Lua } { tex } { [LaTeX]TeX }
+            { sty } { [LaTeX]TeX } { cls } { [LaTeX]TeX } { m } { Matlab } { xml } { XML } { html } { HTML }
+            { sql } { SQL } { rb } { Ruby } { pl } { Perl }
+          }
+          { \betterlistingsdefaultlanguage }
+      }
+  }
+% Sets up a block from its listings options #1 (and #2, the name of the input file, if any): the options for
+% listings (the language first, so that #1 may override it), and the header: the language, in bold, when it was
+% set (language=) or the block has a file, then the file= path, which may break after / _ . -.
+\tl_new:N \l__betterlistings_explicit_tl
+\tl_new:N \l__betterlistings_name_tl
+\seq_new:N \l__betterlistings_match_seq
+\cs_new_protected:Npn \__betterlistings_setup:nn #1#2
+  {
+    \gdef \betterlistings@file { }
+    \group_begin: \lstset {#1} \group_end:
+    % The language given in #1, if any.
+    \tl_clear:N \l__betterlistings_explicit_tl
+    \regex_extract_once:nnNT { language \s* = \s* \{? ([^,\}]*) } { \tl_to_str:n {#1} } \l__betterlistings_match_seq
+      { \tl_set:Ne \l__betterlistings_explicit_tl { \seq_item:Nn \l__betterlistings_match_seq { 2 } } }
+    \tl_if_empty:NTF \l__betterlistings_explicit_tl
+      {
+        \tl_if_empty:NTF \betterlistings@file
+          { \__betterlistings_language:n {#2} }
+          { \exp_args:No \__betterlistings_language:n { \betterlistings@file } }
+      }
+      { \tl_set_eq:NN \l__betterlistings_lang_tl \l__betterlistings_explicit_tl }
+    \tl_set:Ne \l__betterlistings_options_tl
+      { language = { \exp_not:V \l__betterlistings_lang_tl } , \exp_not:n {#1} }
+    % The header.
+    \tl_clear:N \l__betterlistings_title_tl
+    \bool_lazy_or:nnT
+      { ! \tl_if_empty_p:N \l__betterlistings_explicit_tl } { ! \tl_if_empty_p:N \betterlistings@file }
+      {
+        % The language's name: a dialect like [LaTeX]TeX by its dialect, [5.3]Lua by the language.
+        \tl_set:Ne \l__betterlistings_name_tl { \tl_to_str:N \l__betterlistings_lang_tl }
+        \regex_replace_once:nnN { \A \[ (.*) \] TeX \Z } { \1 } \l__betterlistings_name_tl
+        \regex_replace_once:nnN { \A \[ .* \] } { } \l__betterlistings_name_tl
+        \tl_set:Ne \l__betterlistings_title_tl
+          { \exp_not:N \textbf { \exp_not:V \l__betterlistings_name_tl } }
+      }
+    \tl_if_empty:NF \betterlistings@file
+      {
+        \tl_set:Ne \l__betterlistings_name_tl { \tl_to_str:N \betterlistings@file }
+        \regex_replace_all:nnN { ([/_.\-]) } { \1 \c{allowbreak} } \l__betterlistings_name_tl
+        \tl_put_right:Ne \l__betterlistings_title_tl
+          { \exp_not:N \quad \exp_not:V \l__betterlistings_name_tl }
+      }
+  }
+\cs_new_eq:NN \betterlistings@setup \__betterlistings_setup:nn
+% The tcolorbox options for the block set up last: its header, if it has one, and its listings options.
+\cs_new_protected:Npn \betterlistings@block
+  {
+    \tl_if_empty:NF \l__betterlistings_title_tl
+      { \exp_args:Ne \pgfkeysalso { title = { \exp_not:V \l__betterlistings_title_tl } } }
+    \exp_args:Ne \pgfkeysalso { listing~options = { \exp_not:V \l__betterlistings_options_tl } }
+  }
+\ExplSyntaxOff
+\tcbset{
+	betterlistings/.style={
+		enhanced, breakable, listing only,
+		arc=1.2mm, boxrule=0.3pt,
+		colback=code background, colframe=code frame, colupper=betterlistings@fg,
+		left=1ex, right=1ex, top=0.6ex, bottom=0.6ex,
+		before skip=1ex, after skip=1ex,
+		listing remove caption=false,
+		colbacktitle=code header, coltitle=betterlistings@fg,
+		fonttitle=\ttfamily\betterlistingssize, halign title=flush left,
+		titlerule=0.3pt, toptitle=0.4ex, bottomtitle=0.4ex, lefttitle=1ex, righttitle=1ex,
+		before upper={\betterlistings@inboxtrue},
+	},
+	betterlistings block/.code={\betterlistings@block},
+}
+\DeclareTCBListing{lstlisting}{ !O{} }{%
+	betterlistings, code={\betterlistings@setup{#1}{}}, betterlistings block,
+}
+\let\betterlistings@lstinputlisting\lstinputlisting
+\RenewDocumentCommand{\lstinputlisting}{ O{} m }{%
+	\ifbetterlistings@inbox
+		\betterlistings@lstinputlisting[#1]{#2}%
+	\else
+		\tcbinputlisting{betterlistings, code={\betterlistings@setup{#1}{#2}}, betterlistings block,
+			listing file={#2}}%
 	\fi
-}
-% The frame's outer left edge (from the page's text margin) and outer width, and where the code starts in it,
-% taken where the block starts (listings resets the line width and list margin for the title). (listings keeps
-% its dimensions as text: 2\lst@frametextsep would be 23pt.)
-\newdimen\betterlistings@frameleft
-\newdimen\betterlistings@framewidth
-\newdimen\betterlistings@codeindent
-\let\betterlistings@MakeCaption\lst@MakeCaption
-\def\lst@MakeCaption#1{%
-	\if t#1\ifx\betterlistings@file\@empty\else
-		% In the code's font, where listings takes its margins (1ex) too.
-		\begingroup\lst@basicstyle
-		\global\betterlistings@frameleft=\dimexpr\@totalleftmargin+\lst@xleftmargin-\lst@framexleftmargin
-			-\lst@frametextsep-\lst@framerulewidth\relax
-		\global\betterlistings@framewidth=\dimexpr\linewidth-\lst@xleftmargin-\lst@xrightmargin
-			+\lst@framexleftmargin+\lst@framexrightmargin
-			+2\dimexpr\lst@frametextsep\relax+2\dimexpr\lst@framerulewidth\relax\relax
-		\global\betterlistings@codeindent=\dimexpr\lst@frametextsep+\lst@framexleftmargin\relax
-		\endgroup
-	\fi\fi
-	\betterlistings@MakeCaption{#1}}
-% The header strip: the path on "code header" in a box framed in "code frame", as wide as the block's frame
-% (the line width, and the frame's rule and separation on both sides). Its side rules reach a little below it,
-% over the top of the block's side rules, so that no hairline shows where they meet.
-\newbox\betterlistings@headbox
-\newcommand{\betterlistings@header}[1]{%
-	\begingroup
-	% The path starts where the code does.
-	\setbox\betterlistings@headbox\hbox to \dimexpr\betterlistings@framewidth-2\dimexpr\lst@framerulewidth\relax\relax{%
-		\hskip\betterlistings@codeindent
-		{\ttfamily\betterlistingssize\betterlistings@textcolor\strut\betterlistings@file}%
-		\hfil}%
-	\dimen2=\wd\betterlistings@headbox
-	\setbox\betterlistings@headbox\vbox{%
-		\offinterlineskip
-		\hbox{\color{code frame}\vrule width \dimen2 height \lst@framerulewidth}%
-		\hbox{%
-			{\color{code header}\vrule width \dimen2
-				height \dimexpr\ht\betterlistings@headbox+0.4ex\relax
-				depth \dimexpr\dp\betterlistings@headbox+0.4ex\relax}%
-			\hskip-\dimen2
-			\box\betterlistings@headbox}%
-		\hbox{\color{code frame}\vrule width \dimen2 height \lst@framerulewidth}}%
-	% A box in the vertical list (not a paragraph, which a list would indent again), right on top of the block:
-	% the side rules reach 1pt below it, but the box has no depth, so the block follows at once.
-	\setbox\betterlistings@headbox\hbox{%
-		\color{code frame}%
-		\vrule width \lst@framerulewidth height \ht\betterlistings@headbox depth 1pt
-		\box\betterlistings@headbox
-		\vrule width \lst@framerulewidth height \ht\betterlistings@headbox depth 1pt}%
-	\dp\betterlistings@headbox=\z@
-	\moveright\betterlistings@frameleft\box\betterlistings@headbox
-	\nointerlineskip
-	\endgroup
-}
-\AddToHook{begindocument/end}{%
-	\let\betterlistings@maketitle\lst@maketitle
-	\def\lst@maketitle{%
-		\ifx\betterlistings@file\@empty
-			\expandafter\betterlistings@maketitle
-		\else
-			\expandafter\betterlistings@header
-		\fi}%
 }
 
 % cleveref (with its hyperref support) sets the label of listing lines with \cref@currentprefix unexpanded,

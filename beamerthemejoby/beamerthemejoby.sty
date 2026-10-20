@@ -28,7 +28,7 @@
 % Gotham's fonts with a warning.
 %
 % Code: the theme loads betterlistings (code blocks, the file= header, \code) and minted, with code blocks in
-% \scriptsize on the code background (made from the alternate background colorAltBG) and framed in the accent
+% \tiny on the code background (made from the alternate background colorAltBG) and framed in the accent
 % color. minted needs Pygments through latexminted, which TeX runs without -shell-escape.
 %
 % Package integration (applied only if the package is loaded, whether before or after the theme):
@@ -234,9 +234,9 @@
 }
 
 % Code: listings and minted blocks, and \code, from betterlistings (on the alternate background colorAltBG, framed
-% in the accent color), in \scriptsize.
+% in the accent color), in \tiny.
 \RequirePackage{betterlistings}
 \RequirePackage{minted}
-\renewcommand{\betterlistingssize}{\scriptsize}
+\renewcommand{\betterlistingssize}{\tiny}
 
 \endinput

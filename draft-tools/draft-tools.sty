@@ -8,7 +8,9 @@
 %              the image file or the source file and line of the picture, so drafts compile faster.
 %              Pictures that are overlays, fix their own bounding box (\useasboundingbox) or draw no
 %              \node/\draw/\path/\matrix/\pic/\addplot (rules and bars: page decoration) are kept. The \tikz
-%              command is not replaced. Nested tikzpicture environments are not supported.
+%              command is not replaced. Nested tikzpicture environments are not supported. Pictures in a
+%              tcolorbox (which draws its boxes with TikZ) are kept, and so are those in a group after
+%              \draftpicskeep.
 %   draft      both drafttext and draftpics.
 
 \NeedsTeXFormat{LaTeX2e}
@@ -107,6 +109,9 @@
   % pictures that fix their own bounding box, and pictures that draw no nodes or paths (rules and bars
   % filled in with \fill, i.e. page decoration).
   \bool_new:N \g__draft_tikz_env_bool
+  % \draftpicskeep: the TikZ pictures in the current group stay real.
+  \bool_new:N \l__draft_tikz_keep_bool
+  \cs_new_protected:Npn \draftpicskeep { \bool_set_true:N \l__draft_tikz_keep_bool }
   \bool_new:N \l__draft_tikz_skipend_bool
   \tl_new:N \g__draft_tikz_body_tl
   \protected\long\def\__draft_tikz_collect:w #1 \end #2
@@ -151,8 +156,11 @@
       \cs_set_eq:NN \__draft_endtikzpicture_orig: \endtikzpicture
       \AddToHook {env/tikzpicture/before}
         {
-          \int_gset:Nn \l__draft_tikz_line_int {\inputlineno}
-          \bool_gset_true:N \g__draft_tikz_env_bool
+          \bool_if:NF \l__draft_tikz_keep_bool
+            {
+              \int_gset:Nn \l__draft_tikz_line_int {\inputlineno}
+              \bool_gset_true:N \g__draft_tikz_env_bool
+            }
         }
       \cs_set_protected:Npn \tikzpicture
         {
@@ -171,6 +179,9 @@
     }
   }
   \ExplSyntaxOff
+  % A tcolorbox draws its frame and background with TikZ pictures: they are kept.
+  \AtBeginDocument{\IfPackageLoadedTF{tcolorbox}{\tcbset{every box/.append style={code={\draftpicskeep}}}}{}}
 \fi
+\providecommand{\draftpicskeep}{}
 
 \endinput
