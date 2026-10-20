@@ -16,11 +16,13 @@
 %   \code{<code>}
 %       Inline code: <code> in \ttfamily on a rounded rectangle (a "pill") in the color "code background", with
 %       the text in "code text" if it is defined, else in the surrounding text color. A theme may define the code
-%       background (the Joby theme does, for listings too); otherwise it is a quarter mid gray mixed into the
-%       alternate background colorAltBG, or when there is none into the theme's background (Beamer's normal text
-%       background), or into white, which darkens a light background and lightens a dark one.
+%       background (the Joby theme does, for listings too); otherwise it is made from the alternate background
+%       colorAltBG, or when there is none from the theme's background (Beamer's normal text background), or from
+%       white: the same hue with a quarter of the saturation, a step darker, or lighter if the base is dark.
 %       The line may break at a space, where a lower case letter or digit is followed by a capital, and after _ or
 %       ::, without a hyphen; the pill is then closed at the end of the line and opened again on the next one.
+%       The pills hug the ink of the code and are drawn by LuaTeX (common-code.lua), one shape for each line;
+%       other engines put the code on a plain rectangle, which does not break.
 %       The code is literal: every character prints as it is, \, {, }, $, &, #, ^, _ and ~ included, and commands
 %       are not run (\code{\textbf{x}} prints \textbf{x}). Braces must balance. % is literal too, except where
 %       \code is in the argument of another command (a frame without [fragile], a glossary title): there TeX has
@@ -75,18 +77,19 @@
 \@ifpackageloaded{cleveref}{\common@attachmentnames}{\AddToHook{package/cleveref/after}{\common@attachmentnames}}
 
 % Inline code.
-% The code is cut into chunks at its break points, and each chunk is measured first: the blank space left of the
-% ink of its first glyph and right of the ink of its last one (its side bearings, from common-code.lua; 0 without
-% LuaTeX). A chunk's background, a rule as tall as the pill, covers only its ink, from the one to the other. The
-% rounded ends are TikZ caps (the \tikz command, which draft-tools keeps), set against the ink. Between two chunks
-% there is a \discretionary: if the line breaks there, the pre-break text closes the pill (right cap) and the
-% post-break text opens it again (left cap); if not, it is background over the two side bearings, and over the
-% space between two words. Neighboring pieces overlap by \c__common_code_overlap_dim, so that no hairline shows.
-% What is drawn after a glyph (the right cap, the background after a chunk) starts \c__common_code_clear_dim past
-% its ink, or at the end of its box if that is nearer, so that it does not paint over the glyph's edge.
-\RequirePackage{tikz}
-% (Found like a TeX file: Lua's module path need not include TEXINPUTS.)
-\ifdefined\directlua\directlua{local f = kpse.find_file("common-code.lua") if f then dofile(f) end}\fi
+% The text is cut into chunks at its break points, with a \discretionary between two chunks: an empty one inside
+% a word, and at a space one whose no-break text is the space. With LuaTeX the text carries the attribute
+% common@codeattr, set to a number of its own that keys its style (height, depth, radius and color), and
+% common-code.lua does the rest: the padding, set against the ink, at the ends of the code and as the
+% discretionaries' pre-break and post-break text, and after the line breaking one rounded rectangle behind the
+% code on each line. Without LuaTeX the code is on a plain \colorbox, which does not break.
+\RequirePackage{xcolor}
+\ifdefined\directlua
+	\newattribute\common@codeattr
+	\newattribute\common@codepadattr
+	% (Found like a TeX file: Lua's module path need not include TEXINPUTS.)
+	\directlua{local f = kpse.find_file("common-code.lua") if f then dofile(f) end}
+\fi
 \AtBeginDocument{%
 	% The base is the alternate background, else the theme's background (Beamer's normal text), else white.
 	\@ifundefinedcolor{code background}{%
@@ -96,133 +99,37 @@
 				{\usebeamercolor{normal text}\@ifundefinedcolor{normal text.bg}{}{\xglobal\colorlet{common@codebase}{normal text.bg}}}%
 			\fi
 		}{\colorlet{common@codebase}{colorAltBG}}%
-		\colorlet{code background}{black!35!white!25!common@codebase}%
+		\common@codebackground
 	}{}%
 	% Bookmarks and other PDF strings get the plain code.
 	\ifdefined\pdfstringdefDisableCommands\pdfstringdefDisableCommands{\let\code\@firstofone}\fi
 }
 \ExplSyntaxOn
-\dim_new:N \l__common_code_ht_dim
-\dim_new:N \l__common_code_dp_dim
-\dim_new:N \l__common_code_r_dim
-\dim_const:Nn \c__common_code_overlap_dim { 0.2pt }
-\dim_const:Nn \c__common_code_clear_dim { 0.15pt }
-\box_new:N \l__common_code_box
 \tl_new:N \l__common_code_tl
-\tl_new:N \l__common_code_left_tl
-\tl_new:N \l__common_code_right_tl
-\tl_new:N \l__common_code_next_tl
-\int_new:N \l__common_code_n_int
-\seq_new:N \l__common_code_words_seq
-\seq_new:N \l__common_code_word_seq
-% The chunks, and for each the separator after it (c inside a word, s between words) and its side bearings.
-\seq_new:N \l__common_code_chunks_seq
-\seq_new:N \l__common_code_seps_seq
-\seq_new:N \l__common_code_left_seq
-\seq_new:N \l__common_code_right_seq
-\cs_new:Npn \__common_code_sep: { }
-\sys_if_engine_luatex:TF
+\tl_new:N \l__common_code_model_tl
+\tl_new:N \l__common_code_spec_tl
+\tl_new:N \l__common_code_rgb_tl
+\int_new:N \g__common_code_int
+\cs_new_protected:Npn \__common_code_break: { \tex_discretionary:D { } { } { } }
+\cs_new_protected:Npn \__common_code_space: { \tex_discretionary:D { } { } { \tex_kern:D \fontdimen 2 \font } }
+% The code background from the base: its hue, a quarter of its saturation, and a step darker (a step lighter if
+% the base is dark), like the Joby theme's.
+\cs_new_protected:Npn \common@codebackground
   {
-    \cs_new:Npn \__common_code_bearing:n #1
+    \extractcolorspecs { common@codebase } \l__common_code_model_tl \l__common_code_spec_tl
+    \convertcolorspec \l__common_code_model_tl \l__common_code_spec_tl { hsb } \l__common_code_rgb_tl
+    \use:e
       {
-        \lua_now:e
+        \exp_not:N \definecolor { code~background } { hsb }
           {
-            if~commoncode~then~commoncode.bearing(\int_eval:n { \l__common_code_box }, "#1")
-            else~tex.sprint("0pt")~end
+            \clist_item:Nn \l__common_code_rgb_tl { 1 } ,
+            \fp_eval:n { 0.25 * \clist_item:Nn \l__common_code_rgb_tl { 2 } } ,
+            \fp_eval:n
+              {
+                \fp_compare:nNnTF { \clist_item:Nn \l__common_code_rgb_tl { 3 } } < { 0.5 }
+                  { 0.1 + 0.9 * } { 0.9 * } \clist_item:Nn \l__common_code_rgb_tl { 3 }
+              }
           }
-      }
-  }
-  { \cs_new:Npn \__common_code_bearing:n #1 { 0pt } }
-% The rounded ends: a quarter circle above and below, of radius \l__common_code_r_dim, on the pill's height. The
-% left cap's fill reaches into the chunk after it (which is drawn over it); the bounding box is the cap alone.
-\cs_new_protected:Npn \__common_code_cap:n #1
-  {
-    \tikz [ baseline = 0pt ]
-      {
-        \useasboundingbox (0pt, -\l__common_code_dp_dim) rectangle (\l__common_code_r_dim, \l__common_code_ht_dim) ;
-        \fill [ code~background ]
-          \str_if_eq:nnTF {#1} { left }
-            {
-              (\l__common_code_r_dim + \c__common_code_overlap_dim, \l__common_code_ht_dim)
-                -- (\l__common_code_r_dim, \l__common_code_ht_dim)
-                arc [ start~angle = 90, end~angle = 180, radius = \l__common_code_r_dim ]
-                -- (0pt, -\l__common_code_dp_dim + \l__common_code_r_dim)
-                arc [ start~angle = 180, end~angle = 270, radius = \l__common_code_r_dim ]
-                -- (\l__common_code_r_dim + \c__common_code_overlap_dim, -\l__common_code_dp_dim)
-            }
-            {
-              (0pt, \l__common_code_ht_dim)
-                arc [ start~angle = 90, end~angle = 0, radius = \l__common_code_r_dim ]
-                -- (\l__common_code_r_dim, -\l__common_code_dp_dim + \l__common_code_r_dim)
-                arc [ start~angle = 0, end~angle = -90, radius = \l__common_code_r_dim ]
-            }
-          -- cycle ;
-      }
-  }
-% A box of width #1 on the background, which reaches a little into the next box.
-\cs_new_protected:Npn \__common_code_background:n #1
-  {
-    \hbox_to_wd:nn {#1}
-      {
-        \hbox_overlap_right:n
-          {
-            \color { code~background }
-            \tex_vrule:D height \l__common_code_ht_dim depth \l__common_code_dp_dim
-              width \dim_eval:n { #1 + \c__common_code_overlap_dim }
-          }
-        \tex_hss:D
-      }
-  }
-% A chunk #1 with side bearings #2 and #3, on background over its ink.
-\cs_new_protected:Npn \__common_code_chunk:nnn #1#2#3
-  {
-    \hbox_set:Nn \l__common_code_box {#1}
-    \hbox:n
-      {
-        \tex_kern:D #2 \scan_stop:
-        \hbox_overlap_right:n { \__common_code_background:n { \box_wd:N \l__common_code_box - #2 - #3 } }
-        \tex_kern:D - #2 \scan_stop:
-        \box_use_drop:N \l__common_code_box
-      }
-  }
-% Between a chunk with right side bearing #1 and one with left side bearing #3; #2 is s between two words.
-% (#1 is the bearing less the clearance, see \__common_code_after:n.)
-\cs_new_protected:Npn \__common_code_break:nnn #1#2#3
-  {
-    \tex_discretionary:D
-      { \hbox:n { \tex_kern:D - #1 \scan_stop: \__common_code_cap:n { right } } }
-      { \hbox:n { \__common_code_cap:n { left } \tex_kern:D - #3 \scan_stop: } }
-      {
-        \hbox:n
-          {
-            \tex_kern:D - #1 \scan_stop:
-            \__common_code_background:n
-              { #1 + #3 \str_if_eq:nnT {#2} { s } { + \fontdimen 2 \font } }
-            \tex_kern:D - #3 \scan_stop:
-          }
-      }
-  }
-% How far back from the end of a chunk with right side bearing #1 the things after it start.
-\cs_new:Npn \__common_code_after:n #1
-  { \dim_eval:n { #1 - \dim_min:nn { #1 } { \c__common_code_clear_dim } } }
-\cs_generate_variant:Nn \__common_code_break:nnn { eee }
-% Adds the chunks of the word #1 to the list, with c after each and s after the last.
-\cs_new_protected:Npn \__common_code_split:n #1
-  {
-    \tl_set:Nn \l__common_code_tl {#1}
-    \regex_replace_all:nnN { ([a-z0-9])([A-Z]) } { \1 \c{__common_code_sep:} \2 } \l__common_code_tl
-    \regex_replace_all:nnN { (_|::) } { \1 \c{__common_code_sep:} } \l__common_code_tl
-    \seq_set_split:NnV \l__common_code_word_seq { \__common_code_sep: } \l__common_code_tl
-    \seq_remove_all:Nn \l__common_code_word_seq { }
-    \seq_map_inline:Nn \l__common_code_word_seq
-      {
-        \seq_put_right:Nn \l__common_code_chunks_seq {##1}
-        \seq_put_right:Nn \l__common_code_seps_seq { c }
-      }
-    \seq_if_empty:NF \l__common_code_word_seq
-      {
-        \seq_pop_right:NN \l__common_code_seps_seq \l__common_code_tl
-        \seq_put_right:Nn \l__common_code_seps_seq { s }
       }
   }
 % \code reads its argument with the special characters made printable (except the braces, which delimit it), so
@@ -253,48 +160,38 @@
       \regex_replace_all:nnN { \cP\# } { \cO\# } \l__common_code_tl
       \tl_set:Ne \l__common_code_tl { \tl_to_str:N \l__common_code_tl }
       \__common_code_unspace:
+      \tl_trim_spaces:N \l__common_code_tl
+      \regex_replace_all:nnN { ([a-z0-9])([A-Z]) } { \1 \c{__common_code_break:} \2 } \l__common_code_tl
+      \regex_replace_all:nnN { (_|::) } { \1 \c{__common_code_break:} } \l__common_code_tl
+      \regex_replace_all:nnN { \s+ } { \c{__common_code_space:} } \l__common_code_tl
       \ttfamily
-      \@ifundefinedcolor { code~text } { } { \color { code~text } }
-      % The pill is as tall as a parenthesis, the tallest and deepest common glyph, plus a little.
-      \dim_set:Nn \l__common_code_ht_dim { \fontcharht \font `( + 0.1em }
-      \dim_set:Nn \l__common_code_dp_dim { \fontchardp \font `( + 0.1em }
-      \dim_set:Nn \l__common_code_r_dim { 0.12em }
-      \seq_set_split:NnV \l__common_code_words_seq { ~ } \l__common_code_tl
-      \seq_remove_all:Nn \l__common_code_words_seq { }
-      \seq_clear:N \l__common_code_chunks_seq
-      \seq_clear:N \l__common_code_seps_seq
-      \seq_map_function:NN \l__common_code_words_seq \__common_code_split:n
-      % Measure every chunk, then set them.
-      \seq_clear:N \l__common_code_left_seq
-      \seq_clear:N \l__common_code_right_seq
-      \seq_map_inline:Nn \l__common_code_chunks_seq
+      \sys_if_engine_luatex:TF
         {
-          \hbox_set:Nn \l__common_code_box {##1}
-          \seq_put_right:Ne \l__common_code_left_seq { \__common_code_bearing:n { l } }
-          \seq_put_right:Ne \l__common_code_right_seq { \__common_code_bearing:n { r } }
+          \int_gincr:N \g__common_code_int
+          \extractcolorspecs { code~background } \l__common_code_model_tl \l__common_code_spec_tl
+          \convertcolorspec \l__common_code_model_tl \l__common_code_spec_tl { rgb } \l__common_code_rgb_tl
+          \tl_replace_all:Nnn \l__common_code_rgb_tl { , } { ~ }
+          % The pill is as tall as a parenthesis, the tallest and deepest common glyph, plus 0.1em, and its ends
+          % are rounded with a radius of 0.12em, which is also the padding beside the ink.
+          \lua_now:e
+            {
+              commoncode.style
+                (
+                  \int_use:N \g__common_code_int ,
+                  \dim_to_decimal_in_sp:n { \fontcharht \font `( + 0.1em } ,
+                  \dim_to_decimal_in_sp:n { \fontchardp \font `( + 0.1em } ,
+                  \dim_to_decimal_in_sp:n { 0.12em } ,
+                  "\l__common_code_rgb_tl"
+                )
+            }
+          \common@codeattr = \g__common_code_int
+          \@ifundefinedcolor { code~text } { } { \color { code~text } }
+          \tl_use:N \l__common_code_tl
         }
-      \int_set:Nn \l__common_code_n_int { \seq_count:N \l__common_code_chunks_seq }
-      \int_step_inline:nn { \l__common_code_n_int }
         {
-          \tl_set:Ne \l__common_code_left_tl { \seq_item:Nn \l__common_code_left_seq {##1} }
-          \tl_set:Ne \l__common_code_right_tl { \seq_item:Nn \l__common_code_right_seq {##1} }
-          \int_compare:nNnT {##1} = { 1 }
-            { \__common_code_cap:n { left } \tex_kern:D - \l__common_code_left_tl \scan_stop: }
-          \tl_set:Ne \l__common_code_tl { \seq_item:Nn \l__common_code_chunks_seq {##1} }
-          \exp_args:NV \__common_code_chunk:nnn \l__common_code_tl
-            { \l__common_code_left_tl } { \l__common_code_right_tl }
-          \int_compare:nNnTF {##1} < { \l__common_code_n_int }
-            {
-              \tl_set:Ne \l__common_code_next_tl { \seq_item:Nn \l__common_code_left_seq { ##1 + 1 } }
-              \tl_set:Ne \l__common_code_tl { \seq_item:Nn \l__common_code_seps_seq {##1} }
-              \__common_code_break:eee
-                { \__common_code_after:n { \l__common_code_right_tl } }
-                { \l__common_code_tl } { \l__common_code_next_tl }
-            }
-            {
-              \tex_kern:D - \__common_code_after:n { \l__common_code_right_tl } \scan_stop:
-              \__common_code_cap:n { right }
-            }
+          \dim_set:Nn \fboxsep { 0.1em }
+          \colorbox { code~background }
+            { \@ifundefinedcolor { code~text } { } { \color { code~text } } \tl_use:N \l__common_code_tl }
         }
     \group_end:
   }

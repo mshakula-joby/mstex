@@ -41,7 +41,9 @@ build() {
 		outdir=$FIXTURE/out
 		(cd "$FIXTURE" && latexmk -silent -r "$TESTS/.latexmkrc" -outdir="$outdir" "$TESTS/$name.tex" >"$outdir.log" 2>&1)
 	else
-		(latexmk -silent -r "$TESTS/.latexmkrc" "$TESTS/$name.tex" >"$TESTS/build/$name.latexmk.log" 2>&1)
+		# A test named *-pdftex is built with pdfLaTeX instead of LuaLaTeX.
+		local engine=; [[ $name == *-pdftex ]] && engine=-pdf
+		(latexmk -silent -r "$TESTS/.latexmkrc" $engine "$TESTS/$name.tex" >"$TESTS/build/$name.latexmk.log" 2>&1)
 	fi
 	[ -f "$outdir/$name.pdf" ] && ! grep -q '^!\|^[^ ]*:[0-9]*: ' "$outdir/$name.log"
 }
@@ -219,16 +221,41 @@ PY
 		joby-titlepage-noinstitute)
 			expect_text "AUTHOR-WORD" "$name"; expect_text "DATE-WORD" "$name"; expect_no_text "Joby Aviation" "$name"
 			;;
+		common-code-pdftex)
+			grep -q "^Producer:.*pdfTeX" <(pdfinfo "build/$name.pdf") && pass "$name is built with pdfTeX" || fail "$name is built with pdfTeX"
+			expect_text "CMessage::Send()" "$name"; expect_text 'a_b{c}$d' "$name"
+			# A plain rectangle, white a step darker (E6E6E6), with square corners.
+			pdftoppm -r 200 -f 1 -l 1 -png "build/$name.pdf" "build/$name-img"
+			python3 -I - build/$name-img-*.png <<'PY' && pass "$name code is on a plain rectangle" || fail "$name code is on a plain rectangle"
+import sys
+from PIL import Image
+im = Image.open(sys.argv[1]).convert("RGB")
+w, h = im.size
+gray = round(0.9 * 0xFF)
+pts = [(x, y) for y in range(h) for x in range(w) if all(abs(c - gray) < 3 for c in im.getpixel((x, y)))]
+assert len(pts) > 500, "no rectangle"
+# The first rectangle: its top left corner pixel is filled (square, not rounded).
+y0 = min(y for x, y in pts)
+x0 = min(x for x, y in pts if y == y0)
+row = [x for x, y in pts if y == y0 + 1]
+sys.exit(0 if min(row) <= x0 else 1)
+PY
+			;;
 		common-code-fallback)
-			# The pills are 25% mid gray (black!35, A6A6A6) mixed into the slide background, here lighter than it.
+			# The pills are the slide background (dark here) a step lighter.
 			pdftoppm -r 100 -f 1 -l 1 -png "build/$name.pdf" "build/$name-img"
-			python3 -I - build/$name-img-*.png <<'PY' && pass "$name pills mix light gray into the theme background" || fail "$name pills mix light gray into the theme background"
+			python3 -I - build/$name-img-*.png <<'PY' && pass "$name pills are made from the theme background" || fail "$name pills are made from the theme background"
 import sys
 from PIL import Image
 im = Image.open(sys.argv[1]).convert("RGB")
 w, h = im.size
 bg = im.getpixel((3, h // 2))
-code = tuple(round(0.25 * 0xA6 + 0.75 * c) for c in bg)
+import colorsys
+def code_background(rgb):  # the base's hue, a quarter of its saturation, a step darker (lighter if it is dark)
+    h, s, v = colorsys.rgb_to_hsv(*(c / 255 for c in rgb))
+    v = 0.1 + 0.9 * v if v < 0.5 else 0.9 * v
+    return tuple(round(255 * c) for c in colorsys.hsv_to_rgb(h, s / 4, v))
+code = code_background(bg)
 n = sum(1 for p in im.getdata() if sum(abs(a - b) for a, b in zip(p, code)) < 4)
 sys.exit(0 if sum(code) > sum(bg) and n > 1000 else 1)
 PY
@@ -243,6 +270,23 @@ PY
 			for t in 'f(a){b}' 'arr[i][j]' 'user@host' 'cost$5' 'a&b' 'x^2' 'a~b' '\textbf{x}' 'some\_name' '\a\b c' '50% #define \x{y}'; do
 				expect_text "$t" "$name"
 			done
+			# Each pill (or piece of a pill on a line) is one closed shape with four rounded corners, and nothing else
+			# is filled in a pill's color, so no seams can show between pieces.
+			python3 -I - "build/$name.pdf" <<'PY' && pass "$name pills are single shapes" || fail "$name pills are single shapes"
+import re, sys, zlib
+data = open(sys.argv[1], "rb").read()
+text = b""
+for s in re.findall(rb"stream\r?\n(.*?)\r?\nendstream", data, re.S):
+    try: text += zlib.decompress(s) + b"\n"
+    except zlib.error: text += s + b"\n"
+pills = re.findall(rb"q ([\d.]+ [\d.]+ [\d.]+) rg ((?:[-\d. ]+[mlc] )+)f Q", text)
+assert len(pills) >= 8, "%d pills" % len(pills)
+assert all(p.split().count(b"c") == 4 for _, p in pills), "a pill without four rounded corners"
+for color in {c for c, _ in pills}:
+    fills = len(re.findall(re.escape(color) + rb" rg", text))
+    assert fills == sum(1 for c, _ in pills if c == color), "other fills in the pill color %s" % color
+print("    %d pills" % len(pills))
+PY
 			# The pills do not paint over the ink: each word of the same red text is as wide in \code as in \texttt.
 			pi=$(for p in 1 2 3 4 5 6; do pdftotext -f $p -l $p "build/$name.pdf" - | grep -q "^Ink" && echo $p && break; done)
 			pdftoppm -r 300 -f $pi -l $pi -png "build/$name.pdf" "build/$name-ink"
@@ -279,14 +323,19 @@ first = [float(y) for y, w in words if "CInput" in w]
 last = [float(y) for y, w in words if "Something()" in w]
 sys.exit(0 if first and last and last[0] > first[0] + 5 else 1)
 PY
-			# The pills are on the code background: 25% Joby Dark Gray (A8ACAD) in Joby Off-White (F5F4DF), the alternate
-			# background of the default palette.
+			# The pills are on the code background: Joby Off-White (F5F4DF), the alternate background of the default
+			# palette, with a quarter of its saturation and a step darker.
 			pdftoppm -r 100 -f $pg -l $pg -png "build/$name.pdf" "build/$name-pill"
 			python3 -I - build/$name-pill-*.png <<'PY' && pass "$name code is on code background pills" || fail "$name code is on code background pills"
 import sys
 from PIL import Image
 im = Image.open(sys.argv[1]).convert("RGB")
-code = tuple(round(0.25 * g + 0.75 * w) for g, w in zip((0xA8, 0xAC, 0xAD), (0xF5, 0xF4, 0xDF)))
+import colorsys
+def code_background(rgb):  # the base's hue, a quarter of its saturation, a step darker (lighter if it is dark)
+    h, s, v = colorsys.rgb_to_hsv(*(c / 255 for c in rgb))
+    v = 0.1 + 0.9 * v if v < 0.5 else 0.9 * v
+    return tuple(round(255 * c) for c in colorsys.hsv_to_rgb(h, s / 4, v))
+code = code_background((0xF5, 0xF4, 0xDF))
 n = sum(1 for p in im.getdata() if sum(abs(a - b) for a, b in zip(p, code)) < 4)
 sys.exit(0 if n > 2000 else 1)
 PY
@@ -298,22 +347,28 @@ import sys
 from PIL import Image
 im = Image.open(sys.argv[1]).convert("RGB")
 w, h = im.size
-code = tuple(round(0.25 * g + 0.75 * c) for g, c in zip((0xA8, 0xAC, 0xAD), (0xF5, 0xF4, 0xDF)))
+import colorsys
+def code_background(rgb):  # the base's hue, a quarter of its saturation, a step darker (lighter if it is dark)
+    h, s, v = colorsys.rgb_to_hsv(*(c / 255 for c in rgb))
+    v = 0.1 + 0.9 * v if v < 0.5 else 0.9 * v
+    return tuple(round(255 * c) for c in colorsys.hsv_to_rgb(h, s / 4, v))
+code = code_background((0xF5, 0xF4, 0xDF))
 is_pill = lambda p: sum(abs(a - b) for a, b in zip(p, code)) < 6
 is_ink = lambda p: sum(p) < 300
 rows = [y for y in range(h) if any(is_pill(im.getpixel((x, y))) for x in range(0, w, 2))]
-band = [y for y in rows if y - rows[0] < 40]  # the first line of pills
-cols = sorted({x for y in band for x in range(w) if is_pill(im.getpixel((x, y))) or is_ink(im.getpixel((x, y)))})
-# Split into clusters at gaps; the first one with pill pixels is the first pill.
-clusters, cur = [], [cols[0]]
-for x in cols[1:]:
-    if x - cur[-1] > 3: clusters.append(cur); cur = [x]
-    else: cur.append(x)
-clusters.append(cur)
-for c in clusters:
-    pill = [x for x in c for y in band if is_pill(im.getpixel((x, y)))]
-    if pill: break
-ink = [x for x in c for y in band if is_ink(im.getpixel((x, y)))]
+band = [rows[0]]  # the first line of pills: the first rows with pill pixels, without a gap
+for y in rows[1:]:
+    if y - band[-1] > 1: break
+    band.append(y)
+# The pill's extent, on its top row, above the letters (where text edges cannot pass for pill; the rounded
+# corners take about a pixel off each end there), and the ink inside it.
+y = band[0]
+xs = [x for x in range(w) if is_pill(im.getpixel((x, y)))]
+pill = [xs[0]]
+for x in xs[1:]:
+    if x - pill[-1] > 1: break
+    pill.append(x)
+ink = [x for x in range(pill[0], pill[-1] + 1) for y in band if is_ink(im.getpixel((x, y)))]
 left, right = min(ink) - min(pill), max(pill) - max(ink)
 em = 9 / 72.27 * 200
 print("    gaps %d and %d px (em %.1f px)" % (left, right, em))
@@ -321,15 +376,20 @@ sys.exit(0 if 0 < left <= 0.2 * em and 0 < right <= 0.2 * em and abs(left - righ
 PY
 			;;
 		joby-listings-after)
-			# Orange palette: the block is on the code background (25% Joby Dark Gray in Joby Off-White), framed in the
-			# accent color (Joby Yellow, FFB300).
+			# Orange palette: the block is on the code background (Joby Off-White, less saturated and a step darker),
+			# framed in the accent color (Joby Yellow, FFB300).
 			pdftoppm -r 100 -f 1 -l 1 -png "build/$name.pdf" "build/$name-img"
 			python3 -I - build/$name-img-*.png <<'PY' && pass "$name block is on the code background with an accent frame" || fail "$name block is on the code background with an accent frame"
 import sys
 from PIL import Image
 px = list(Image.open(sys.argv[1]).convert("RGB").getdata())
 near = lambda c, t: sum(1 for p in px if sum(abs(a - b) for a, b in zip(p, c)) < t)
-code = tuple(round(0.25 * g + 0.75 * w) for g, w in zip((0xA8, 0xAC, 0xAD), (0xF5, 0xF4, 0xDF)))
+import colorsys
+def code_background(rgb):  # the base's hue, a quarter of its saturation, a step darker (lighter if it is dark)
+    h, s, v = colorsys.rgb_to_hsv(*(c / 255 for c in rgb))
+    v = 0.1 + 0.9 * v if v < 0.5 else 0.9 * v
+    return tuple(round(255 * c) for c in colorsys.hsv_to_rgb(h, s / 4, v))
+code = code_background((0xF5, 0xF4, 0xDF))
 sys.exit(0 if near(code, 4) > 5000 and near((0xFF, 0xB3, 0x00), 60) > 200 else 1)
 PY
 			;;
