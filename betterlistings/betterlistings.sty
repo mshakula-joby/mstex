@@ -8,7 +8,7 @@
 %       Opt-in: \begin{lstlisting}[style=betterlisting] ... and \lstinputlisting[style=betterlisting]{<file>},
 %       or \lstset{style=betterlisting} for all listings; listings without it are plain listings, as without
 %       this package (betterlisting=false turns it off again for one). A block in the style is a box with
-%       rounded corners on the color "code background", with a hairline border in "code frame"; the code is in
+%       rounded corners on the color "code background", with a hairline border in "code border"; the code is in
 %       \ttfamily at \betterlistingssize, highlighted (bold keywords in "code keyword", strings in "code
 %       string", comments in "code comment"), with line numbers in "code number", and long lines break with an
 %       arrow. The language comes from the file's extension (file=, or the input file's name; C++, Python,
@@ -22,7 +22,9 @@
 %   file=<path>
 %       A key of the style: the block gets a header on "code header" with the language, in bold, and <path> in
 %       \ttfamily, which wraps after / _ . and - (\begin{lstlisting}[style=betterlisting, file=src/main.cpp]).
-%       A block with language= gets the header too, with the language only.
+%       A block with language= gets the header too, with the language only. The header is outlined in "code
+%       frame" (the accent color), with a thicker rule of it under the header and a short shadow ("code shadow")
+%       from that rule onto the body.
 %   \betterlistingssize
 %       The font size of code blocks: empty (the surrounding size) unless redefined (the Joby theme makes it
 %       \tiny).
@@ -43,8 +45,9 @@
 %       A document or theme may define any of them; otherwise "code background" is made from the alternate
 %       background colorAltBG, or when there is none from the theme's background (Beamer's normal text
 %       background), or from white: the same hue with a quarter of the saturation, a step darker, or a step
-%       lighter if it is dark. "code header" is a step further, and "code frame" is colorAccent, or a step
-%       further again. The highlighting colors are mixed with the text color ("code text", Beamer's normal text
+%       lighter if it is dark. "code header" is a step further, "code border" a step further again, "code
+%       frame" is colorAccent, or a step beyond the border, and "code shadow" is the background with a quarter
+%       black. The highlighting colors are mixed with the text color ("code text", Beamer's normal text
 %       color or black), so they read on light and dark backgrounds.
 %
 % With cleveref's hyperref support on (as the Joby theme has it), cleveref's listings hooks make
@@ -105,13 +108,17 @@
     \@ifundefinedcolor { code~header }
       { \__betterlistings_step:nnn { code~background } { code~header } { 1 } }
       { }
+    \@ifundefinedcolor { code~border }
+      { \__betterlistings_step:nnn { code~header } { code~border } { 1 } }
+      { }
     \@ifundefinedcolor { code~frame }
       {
         \@ifundefinedcolor { colorAccent }
-          { \__betterlistings_step:nnn { code~header } { code~frame } { 1 } }
+          { \__betterlistings_step:nnn { code~border } { code~frame } { 1 } }
           { \colorlet { code~frame } { colorAccent } }
       }
       { }
+    \@ifundefinedcolor { code~shadow } { \colorlet { code~shadow } { black!25!code~background } } { }
     % The text color, as a color: "code text", else Beamer's normal text color, else black.
     \@ifundefinedcolor { code~text }
       {
@@ -210,6 +217,10 @@
 \int_new:N \l__betterlistings_number_int
 \int_new:N \l__betterlistings_size_int
 \int_new:N \l__betterlistings_max_int
+\int_new:N \l__betterlistings_firstmax_int
+\int_new:N \l__betterlistings_from_int
+\int_new:N \l__betterlistings_to_int
+\dim_new:N \l__betterlistings_avail_dim
 \dim_new:N \g__betterlistings_line_dim
 \bool_new:N \l__betterlistings_range_bool
 % The language for a file name: from its extension, else the default.
@@ -310,19 +321,23 @@
         \tl_if_empty:NF \g__betterlistings_label_tl { \exp_args:NV \label \g__betterlistings_label_tl }
         \exp_args:Nnne \addcontentsline { \ext@lstlisting } { lstlisting }
           { \exp_not:N \protect \exp_not:N \numberline { \thelstlisting } \exp_not:V \g__betterlistings_short_tl }
-        % Beamer numbers a caption from its type (\beamer@makecaption, as its \caption does), other classes
-        % from the label (\lst@makecaption, as listings does). Beamer's \caption does not break after it.
-        \group_begin:
-          \cs_if_exist:NTF \beamer@makecaption
-            { \exp_args:NnV \beamer@makecaption { lstlisting } \g__betterlistings_caption_tl \par \nobreak }
-            {
-              \skip_set:Nn \abovecaptionskip { \smallskipamount }
-              \skip_set:Nn \belowcaptionskip { \smallskipamount }
-              \exp_args:NNV \lst@makecaption \fnum@lstlisting \g__betterlistings_caption_tl
-              \nobreak
-            }
-        \group_end:
+        \__betterlistings_caption_text:
       }
+  }
+% The caption itself. Beamer numbers a caption from its type (\beamer@makecaption, as its \caption does), other
+% classes from the label (\lst@makecaption, as listings does). Beamer's \caption does not break after it.
+\cs_new_protected:Npn \__betterlistings_caption_text:
+  {
+    \group_begin:
+      \cs_if_exist:NTF \beamer@makecaption
+        { \exp_args:NnV \beamer@makecaption { lstlisting } \g__betterlistings_caption_tl \par \nobreak }
+        {
+          \skip_set:Nn \abovecaptionskip { \smallskipamount }
+          \skip_set:Nn \belowcaptionskip { \smallskipamount }
+          \exp_args:NNV \lst@makecaption \fnum@lstlisting \g__betterlistings_caption_tl
+          \nobreak
+        }
+    \group_end:
   }
 % The lines of the block, \l__betterlistings_first_int to \l__betterlistings_last_int, if they can be told (from
 % firstline, lastline or a single linerange, and the number of lines of the file #2, counted in Lua); false if not.
@@ -377,10 +392,15 @@
 \cs_new_protected:Npn \__betterlistings_boxes:nnn #1#2#3
   {
     \__betterlistings_setup:nn {#1} {#2}
-    % The most lines in a box: splitlines=, else in Beamer as many as fill 0.8 of the text height (leaving room
-    % for the header and caption), at the lines' average height in this block, with the long lines that wrap:
-    % the block's lines are typeset once, at the box's width, to measure it. Elsewhere boxes break by themselves.
+    % The most lines in a box: splitlines=, else in Beamer as many as fit a slide: the frame's height for content
+    % (\jobyframeheight with the Joby theme, which has the frame title in the text area; else the text height
+    % less two lines) times the height at which allowframebreaks breaks (\beamer@autobreakfactor), less the box's
+    % own height (padding, border, header) and, for the first
+    % box, the caption's, at the lines' average height in this block, long lines that wrap included, and one line
+    % to spare. The block is typeset once at the box's width to measure its lines, and a box of one line with and
+    % without the caption to measure the rest. Elsewhere boxes break by themselves.
     \int_zero:N \l__betterlistings_max_int
+    \int_zero:N \l__betterlistings_firstmax_int
     \bool_set_false:N \l__betterlistings_range_bool
     \__betterlistings_range:nnT {#1} {#3} { \bool_set_true:N \l__betterlistings_range_bool }
     \tl_if_empty:NTF \g__betterlistings_split_tl
@@ -414,43 +434,81 @@
               }
             \dim_compare:nNnT \g__betterlistings_line_dim > { 0pt }
               {
-                \int_set:Nn \l__betterlistings_max_int
+                \dim_set:Nn \l__betterlistings_avail_dim
                   {
-                    \dim_ratio:nn
-                      { 0.8 \textheight - \tl_if_empty:NTF \g__betterlistings_caption_tl { 4 } { 7 } \g__betterlistings_line_dim }
-                      { \g__betterlistings_line_dim }
+                    \cs_if_exist:NTF \beamer@autobreakfactor { \beamer@autobreakfactor } { 0.95 }
+                    \dimexpr
+                      \cs_if_exist:NTF \jobyframeheight { \jobyframeheight } { \textheight - 2 \baselineskip }
+                    \relax
                   }
+                \__betterlistings_unit:nnN {#3} { } \l__betterlistings_max_int
+                \tl_if_empty:NTF \g__betterlistings_caption_tl
+                  { \int_set_eq:NN \l__betterlistings_firstmax_int \l__betterlistings_max_int }
+                  { \__betterlistings_unit:nnN {#3} { caption } \l__betterlistings_firstmax_int }
               }
           }
       }
-      { \int_set:Nn \l__betterlistings_max_int { \g__betterlistings_split_tl } }
-    \bool_lazy_and:nnTF { \int_compare_p:nNn \l__betterlistings_max_int > { 0 } } { \l__betterlistings_range_bool }
       {
-        \int_set:Nn \l__betterlistings_size_int
-          { \l__betterlistings_last_int - \l__betterlistings_first_int + 1 }
-        \int_compare:nNnTF \l__betterlistings_size_int > \l__betterlistings_max_int
+        \int_set:Nn \l__betterlistings_max_int { \g__betterlistings_split_tl }
+        \int_set_eq:NN \l__betterlistings_firstmax_int \l__betterlistings_max_int
+      }
+    \bool_lazy_all:nTF
+      {
+        { \int_compare_p:nNn \l__betterlistings_max_int > { 0 } }
+        { \l__betterlistings_range_bool }
+        { \int_compare_p:nNn { \l__betterlistings_last_int - \l__betterlistings_first_int + 1 } > \l__betterlistings_firstmax_int }
+      }
+      {
+        % Each box as full as it can be, the last with the rest.
+        \int_set_eq:NN \l__betterlistings_from_int \l__betterlistings_first_int
+        \int_set_eq:NN \l__betterlistings_size_int \l__betterlistings_firstmax_int
+        \int_do_until:nNnn \l__betterlistings_from_int > \l__betterlistings_last_int
           {
-            % Even boxes: as few as hold the lines (n of them), as full as each other.
-            \int_set:Nn \l_tmpa_int
-              {
-                \int_div_truncate:nn
-                  { \l__betterlistings_size_int + \l__betterlistings_max_int - 1 } { \l__betterlistings_max_int }
-              }
-            \int_set:Nn \l__betterlistings_size_int
-              { \int_div_truncate:nn { \l__betterlistings_size_int + \l_tmpa_int - 1 } { \l_tmpa_int } }
-            \int_step_inline:nnnn \l__betterlistings_first_int \l__betterlistings_size_int \l__betterlistings_last_int
-              {
-                \__betterlistings_box:nene
-                  { ##1 }
-                  { \int_min:nn { ##1 + \l__betterlistings_size_int - 1 } { \l__betterlistings_last_int } }
-                  {#3}
-                  { \int_compare:nNnTF {##1} = \l__betterlistings_first_int { first } { } }
-              }
+            \int_set:Nn \l__betterlistings_to_int
+              { \int_min:nn { \l__betterlistings_from_int + \l__betterlistings_size_int - 1 } { \l__betterlistings_last_int } }
+            \__betterlistings_box:eeee
+              { \int_use:N \l__betterlistings_from_int }
+              { \int_use:N \l__betterlistings_to_int }
+              {#3}
+              { \int_compare:nNnTF \l__betterlistings_from_int = \l__betterlistings_first_int { first } { } }
+            \int_set:Nn \l__betterlistings_from_int { \l__betterlistings_to_int + 1 }
+            \int_set_eq:NN \l__betterlistings_size_int \l__betterlistings_max_int
           }
-          { \__betterlistings_box:nnnn { } { } {#3} { first } }
       }
       { \__betterlistings_box:nnnn { } { } {#3} { first } }
     \str_if_eq:VnT \g__betterlistings_captionpos_tl { b } { \__betterlistings_caption: }
+  }
+% Sets #3 to the most lines of the file #1 that fit a box on a slide, with the caption above if #2 is caption:
+% the available height less a box of one line (and the caption), in lines; the line of that box is the one to
+% spare.
+\cs_new_protected:Npn \__betterlistings_unit:nnN #1#2#3
+  {
+    \hbox_set:Nn \l_tmpb_box
+      {
+        \vbox:n
+          {
+            \dim_set_eq:NN \hsize \linewidth
+            \str_if_eq:nnT {#2} { caption } { \__betterlistings_caption_text: }
+            \tcbinputlisting
+              {
+                betterlistings ,
+                betterlistings~block = { \int_use:N \l__betterlistings_first_int }
+                  { \int_use:N \l__betterlistings_first_int } { \int_use:N \l__betterlistings_first_int } ,
+                listing~file = {#1} , before = { } , after = { }
+              }
+          }
+      }
+    \int_set:Nn #3
+      {
+        \int_max:nn { 1 }
+          {
+            \dim_ratio:nn
+              {
+                \l__betterlistings_avail_dim - ( \box_ht:N \l_tmpb_box + \box_dp:N \l_tmpb_box )
+              }
+              { \g__betterlistings_line_dim }
+          }
+      }
   }
 % A box of lines #1 to #2 (all lines if empty) of the file #3; #4 is first for the block's first box, which has
 % the caption above it (unless the caption goes below). In Beamer the caption and the box are one \vbox, so that
@@ -490,14 +548,17 @@
       }
       { \tcbinputlisting { betterlistings , betterlistings~block = {#1} {#2} {#1} , listing~file = {#3} } }
   }
-\cs_generate_variant:Nn \__betterlistings_box:nnnn { nene }
+\cs_generate_variant:Nn \__betterlistings_box:nnnn { nene , eeee }
 % The tcolorbox options for a box of the block set up last: its header, if it has one, and its listings options;
 % for a box of lines #1 to #2 of a split block (#3 is #1), with those lines, numbered on from the box before
 % (firstnumber=last) except in the first box, which has the block's own numbering.
 \cs_new_protected:Npn \betterlistings@block #1#2#3
   {
     \tl_if_empty:NF \l__betterlistings_title_tl
-      { \exp_args:Ne \pgfkeysalso { title = { \exp_not:V \l__betterlistings_title_tl } } }
+      {
+        \exp_args:Ne \pgfkeysalso { title = { \exp_not:V \l__betterlistings_title_tl } }
+        \pgfkeysalso { betterlistings~header }
+      }
     \tl_if_empty:nTF {#1}
       { \exp_args:Ne \pgfkeysalso { listing~options = { \exp_not:V \l__betterlistings_options_tl } } }
       {
@@ -517,17 +578,32 @@
 	betterlistings/.style={
 		enhanced, breakable, listing only,
 		arc=1.2mm, boxrule=0.3pt,
-		colback=code background, colframe=code frame, colupper=betterlistings@fg,
+		colback=code background, colframe=code border, colupper=betterlistings@fg,
 		left=1ex, right=1ex, top=0.6ex, bottom=0.6ex,
 		before skip=1ex, after skip=1ex,
 		% The caption is above (or below) the box, not in it.
 		listing remove caption,
 		colbacktitle=code header, coltitle=betterlistings@fg,
 		fonttitle=\ttfamily\betterlistingssize, halign title=flush left,
-		titlerule=0.3pt, toptitle=0.4ex, bottomtitle=0.4ex, lefttitle=1ex, righttitle=1ex,
+		% The accent color is around the header only, with a thicker rule under it.
+		titlerule=0.8pt, titlerule style={code frame},
+		toptitle=0.4ex, bottomtitle=0.4ex, lefttitle=1ex, righttitle=1ex,
 		before upper={\betterlistings@inboxtrue},
 	},
 	betterlistings block/.code n args={3}{\betterlistings@block{#1}{#2}{#3}},
+	% A box with a header: the header's outline in the accent color (over the box's thin border, down to the
+	% rule under the header), and a short shadow from that rule onto the body, which ends before the first line
+	% (the box has more padding at the top for it).
+	betterlistings header/.style={
+		top=1.2ex,
+		overlay unbroken and first={%
+			\draw[code frame, line width=0.3pt, rounded corners=\dimexpr1.2mm-0.15pt\relax]
+				([xshift=0.15pt]frame.west |- interior.north) -- ([xshift=0.15pt, yshift=-0.15pt]frame.north west)
+				-- ([xshift=-0.15pt, yshift=-0.15pt]frame.north east) -- ([xshift=-0.15pt]frame.east |- interior.north);
+			\shade[top color=code shadow, bottom color=code background]
+				(interior.north west) rectangle ([yshift=-0.8ex]interior.north east);
+		},
+	},
 }
 \DeclareDocumentEnvironment{lstlisting}{ !O{} }{\tcbwritetemp}{%
 	\endtcbwritetemp

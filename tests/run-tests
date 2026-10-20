@@ -235,7 +235,8 @@ first = [y for y, w in words if "src/flight" in w]
 last = [y for y, w in words if "entry_point.cpp" in w]
 assert first and last and last[0] > first[0] + 3, "the long path wraps"
 PY
-			# Each header (on "code header") sits right on top of its block (on "code background"), as wide.
+			# Each header (on "code header") sits right on top of its block (on "code background"), as wide: the body
+			# starts below the accent rule and the short shadow under it (at most 30px at 300dpi).
 			pdftoppm -r 300 -f 1 -l 1 -png "build/$name.pdf" "build/$name-img"
 			python3 -I - build/$name-img-*.png <<'PY' && pass "$name headers sit on their blocks" || fail "$name headers sit on their blocks"
 import sys, colorsys
@@ -258,6 +259,7 @@ def boxes(c, x0, x1):  # runs of rows with that color in columns x0..x1, and the
     out.append(cur)
     res = []
     for b in out:
+        if len(b) < 5: continue  # a row of the shadow's gradient that passes through the color
         y = b[len(b) // 2]
         xs = [x for x in range(x0, x1) if near(im.getpixel((x, y)), c)]
         res.append((b[0], b[-1], min(xs), max(xs)))
@@ -266,7 +268,7 @@ for x0, x1, nheads in ((0, w // 2, 1), (w // 2, w, 2)):
     heads, blocks = boxes(header, x0, x1), boxes(code, x0, x1)
     assert len(heads) == nheads and len(blocks) == 2, (heads, blocks)
     for ht, hb, hl, hr in heads:
-        below = [b for b in blocks if 0 <= b[0] - hb <= 4]
+        below = [b for b in blocks if 0 <= b[0] - hb <= 30]
         assert below, "a block right below the header at %d" % hb
         bt, bb, bl, br = below[0]
         assert abs(hl - bl) <= 3 and abs(hr - br) <= 3, "as wide: %s %s" % ((hl, hr), (bl, br))
@@ -517,9 +519,10 @@ print("    SIZEWORD widths %s" % w)
 sys.exit(0 if len(w) == 2 and abs(w[0] - w[1]) < 0.2 else 1)
 PY
 			# Orange palette: the block is on the code background (Joby Off-White, less saturated and a step darker),
-			# framed in the accent color (Joby Yellow, FFB300).
+			# with a thin border in the code border color (gray); the accent color (Joby Yellow, FFB300) is only
+			# around its header (language=C++ gives it one), above the body.
 			pdftoppm -r 300 -f 1 -l 1 -png "build/$name.pdf" "build/$name-img"
-			python3 -I - build/$name-img-*.png <<'PY' && pass "$name block is on the code background with an accent frame" || fail "$name block is on the code background with an accent frame"
+			python3 -I - build/$name-img-*.png <<'PY' && pass "$name block has a neutral border, the accent only at its header" || fail "$name block has a neutral border, the accent only at its header"
 import sys
 from PIL import Image
 px = list(Image.open(sys.argv[1]).convert("RGB").getdata())
@@ -530,7 +533,16 @@ def code_background(rgb):  # the base's hue, a quarter of its saturation, a step
     v = 0.1 + 0.9 * v if v < 0.5 else 0.9 * v
     return tuple(round(255 * c) for c in colorsys.hsv_to_rgb(h, s / 4, v))
 code = code_background((0xF5, 0xF4, 0xDF))
-sys.exit(0 if near(code, 4) > 40000 and near((0xFF, 0xB3, 0x00), 60) > 1000 else 1)
+def step(rgb):  # a step darker, same hue and saturation: the header from the code background, the border from it
+    h, s, v = colorsys.rgb_to_hsv(*(c / 255 for c in rgb))
+    return tuple(round(255 * c) for c in colorsys.hsv_to_rgb(h, s, 0.9 * v))
+border = step(step(code))
+im = Image.open(sys.argv[1]).convert("RGB")
+w, h = im.size
+rows = lambda c, t: [y for y in range(h) for x in range(0, w, 3) if sum(abs(a - b) for a, b in zip(im.getpixel((x, y)), c)) < t]
+accent, body = rows((0xFF, 0xB3, 0x00), 30), rows(code, 4)
+print("    accent rows %d-%d, body rows %d-%d, border %d px" % (min(accent), max(accent), min(body), max(body), near(border, 12)))
+sys.exit(0 if near(border, 12) > 1000 and max(accent) < min(body) + 40 and max(body) > max(accent) + 50 else 1)
 PY
 			;;
 		common)
