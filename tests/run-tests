@@ -450,6 +450,13 @@ PY
 			grep -qx "TITLE-SHOWN" <<<"$t" && pass "$name the title shows, unnumbered" || fail "$name the title shows, unnumbered"
 			expect_no_text "TITLE-REPLACED" "$name"; expect_text "Listing 1: CAPTION-WINS" "$name"
 			;;
+		betterlistings-arrow)
+			# The line wraps (the arrow is drawn: dark pixels of it exist), but no arrow character is in the text.
+			expect_text "ARROW_LONG_LINE" "$name"
+			t=$(pdftotext -f 1 -l 1 "build/$name.pdf" - | sed '/©/q')
+			grep -q "↪" <<<"$t" && fail "$name the arrow is not in the text" || pass "$name the arrow is not in the text"
+			grep -qx ";" <<<"$t" && pass "$name the line wraps" || fail "$name the line wraps"
+			;;
 		betterlistings-cleveref)
 			# The build finishes (no loop); \cref names the listing.
 			expect_text "CLEVEREF_CODE" "$name"; expect_text "See listing 1." "$name"

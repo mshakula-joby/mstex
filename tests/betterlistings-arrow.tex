@@ -1,0 +1,12 @@
+% betterlistings: the arrow that marks a wrapped line is left out of copied (and extracted) text, like the line
+% numbers, together with the space after it.
+\documentclass[aspectratio=169,10pt]{beamer}
+\usetheme{joby}
+\lstset{style=betterlisting}
+\begin{document}
+\begin{frame}[fragile]{Arrow}
+	\begin{lstlisting}
+int ARROW_LONG_LINE = aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa;
+	\end{lstlisting}
+\end{frame}
+\end{document}

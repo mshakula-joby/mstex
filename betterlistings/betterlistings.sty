@@ -11,9 +11,9 @@
 %       rounded corners on the color "code background", with no border; the code is in \ttfamily at
 %       \betterlistingssize, highlighted (keywords in "code keyword", strings in "code string", comments in
 %       "code comment", preprocessor directives in "code directive"), with line numbers in "code number" (left
-%       out of copied text, unless copynumbers=true), and long lines break with an arrow. The language comes
-%       from the file's extension (file=, or the input file's name; C++, Python, Java, bash, Lua, LaTeX and
-%       others), else \betterlistingsdefaultlanguage (C++); language= overrides it.
+%       out of copied text, unless copynumbers=true), and long lines break with an arrow (never copied). The
+%       language comes from the file's extension (file=, or the input file's name; C++, Python, Java, bash, Lua,
+%       LaTeX and others), else \betterlistingsdefaultlanguage (C++); language= overrides it.
 %       caption= is a caption above the box (below it with captionpos=b), numbered like listings' own ("Listing
 %       1: ..."), with label= and an entry in the list of listings; title= is listings' unnumbered caption, set
 %       there as listings sets it (whichever of the two is given last counts, as in listings).
@@ -160,7 +160,9 @@
       { \colorlet { code~comment } { betterlistings@fg!55!code~background } } { }
     \@ifundefinedcolor { code~number }
       { \colorlet { code~number } { betterlistings@fg!40!code~background } } { }
-    \hbox_gset:Nn \betterlistings@arrow { \betterlistingssize \color { code~comment } $ \hookrightarrow $ }
+    % The arrow and the space after it are marked with empty ActualText, like the line numbers: not copied.
+    \hbox_gset:Nn \betterlistings@arrow
+      { \betterlistingssize \color { code~comment } \BeginAccSupp { method = plain , ActualText = { } } $ \hookrightarrow $ \space \EndAccSupp { } }
   }
 \box_new:N \betterlistings@arrow
 % The text color of code: "code text", else Beamer's normal text color, else the surrounding one.
@@ -226,7 +228,7 @@
 	breaklines=true,
 	% (A color change in postbreak breaks the line, at least in Beamer, whose \color looks ahead for an overlay
 	% specification: the arrow is made beforehand, in a box.)
-	postbreak=\mbox{\usebox\betterlistings@arrow\space},
+	postbreak=\mbox{\usebox\betterlistings@arrow},
 	showstringspaces=false,
 	columns=fullflexible,
 	keepspaces=true,
