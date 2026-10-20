@@ -535,10 +535,34 @@
           }
       }
   }
+% Where the file's lines are skipped, the first line shown of a range after the first has a little more space above
+% it (\l__betterlistings_gap_dim, in the line's own box: a taller strut) and dots above its number, which are
+% right-aligned with it (#1 is the n-th line shown, #2 its number).
+\dim_new:N \l__betterlistings_gap_dim
+\dim_set:Nn \l__betterlistings_gap_dim { 0.8ex }
+\cs_new_protected:Npn \__betterlistings_gap:nn #1#2
+  {
+    \bool_set_false:N \l_tmpa_bool
+    \int_step_inline:nnn { 2 } { \g__betterlistings_ranges_int }
+      {
+        \int_compare:nNnT {#1} = { \use:c { __betterlistings_before_ ##1 : } + 1 }
+          { \bool_set_true:N \l_tmpa_bool }
+      }
+    \bool_if:NTF \l_tmpa_bool
+      {
+        \vrule width 0pt height \dim_eval:n { \ht \strutbox + \l__betterlistings_gap_dim } depth 0pt
+        #2
+        \llap { \raisebox { \ht \strutbox } { \textperiodcentered \textperiodcentered \textperiodcentered } }
+      }
+      {#2}
+  }
 \cs_new_protected:Npn \betterlistings@mapnumbers
   {
     \bool_if:NT \g__betterlistings_map_bool
-      { \cs_set_nopar:Npn \thelstnumber { \__betterlistings_mapped:n { \value { lstnumber } } } }
+      {
+        \cs_set_protected_nopar:Npn \thelstnumber
+          { \__betterlistings_gap:nn { \value { lstnumber } } { \__betterlistings_mapped:n { \value { lstnumber } } } }
+      }
   }
 \cs_generate_variant:Nn \regex_extract_once:nnNTF { nV }
 \cs_generate_variant:Nn \regex_extract_once:nnNT { nV }
@@ -644,6 +668,18 @@
           {
             \int_set:Nn \l__betterlistings_to_int
               { \int_min:nn { \l__betterlistings_from_int + \l__betterlistings_size_int - 1 } { \l__betterlistings_total_int } }
+            % A box ends where the file's lines are skipped, if that is in its second half (the gap is then not inside
+            % a box that is about to be broken).
+            \int_step_inline:nnn { 2 } { \g__betterlistings_ranges_int }
+              {
+                \bool_lazy_and:nnT
+                  { \int_compare_p:nNn { \use:c { __betterlistings_before_ ##1 : } } < \l__betterlistings_to_int }
+                  {
+                    \int_compare_p:nNn { \use:c { __betterlistings_before_ ##1 : } }
+                      > { \l__betterlistings_from_int + \l__betterlistings_size_int / 2 - 1 }
+                  }
+                  { \int_set:Nn \l__betterlistings_to_int { \use:c { __betterlistings_before_ ##1 : } } }
+              }
             \__betterlistings_box:eeee
               { \int_use:N \l__betterlistings_from_int }
               { \int_use:N \l__betterlistings_to_int }

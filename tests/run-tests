@@ -301,7 +301,7 @@ sys.exit(0 if sum(1 for p in px if sum(abs(a - b) for a, b in zip(p, code)) < 4)
 PY
 			;;
 		betterlistings-ranges)
-			# Several ranges: split over slides, numbered by the file's lines (2 to 4, then 40 to 99), the gap skipped.
+			# Several ranges: split over slides, numbered by the file's lines (2 to 20, then 40 to 99), the gap skipped, and the split at the gap.
 			n=$(pdfinfo "build/$name.pdf" | awk '/Pages/{print $2}')
 			[ "$n" -ge 2 ] && pass "$name the block is split over $n slides" || fail "$name the block is split over slides ($n)"
 			expect_text "Listing 1: RANGES-CAPTION" "$name"; expect_text "LINE002" "$name"; expect_text "LINE099" "$name"
@@ -310,7 +310,7 @@ PY
 import re, sys
 html = open(sys.argv[1]).read()
 pages = re.findall(r'<page width="([\d.]+)" height="([\d.]+)">(.*?)</page>', html, re.S)
-want = [2, 3, 4] + list(range(40, 100))
+want = list(range(2, 21)) + list(range(40, 100))
 nums, texts = [], []
 for w, h, body in pages:
     words = re.findall(r'yMax="([\d.]+)">([^<]*)<', body)
@@ -323,6 +323,9 @@ for w, h, body in pages:
     nums += [int(t) for y, t in words if re.fullmatch(r"\d+", t)][:-1]
 assert texts == want, texts
 assert nums == want, nums[:8]
+# The first box ends where the lines are skipped, not a line or two into the second range.
+first = [int(t[4:]) for y, t in re.findall(r'yMax="([\d.]+)">([^<]*)<', pages[0][2]) if re.fullmatch(r"LINE\d{3}", t)]
+assert first[-1] == 20, first[-3:]
 PY
 			;;
 		betterlistings-split)
