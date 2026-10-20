@@ -8,11 +8,12 @@
 %       Opt-in: \begin{lstlisting}[style=betterlisting] ... and \lstinputlisting[style=betterlisting]{<file>},
 %       or \lstset{style=betterlisting} for all listings; listings without it are plain listings, as without
 %       this package (betterlisting=false turns it off again for one). A block in the style is a box with
-%       rounded corners on the color "code background", with a hairline border in "code border"; the code is in
-%       \ttfamily at \betterlistingssize, highlighted (keywords in "code keyword", strings in "code string",
-%       comments in "code comment", preprocessor directives in "code directive"), with line numbers in "code
-%       number", and long lines break with an arrow. The language comes from the file's extension (file=, or the input file's name; C++, Python,
-%       Java, bash, Lua, LaTeX and others), else \betterlistingsdefaultlanguage (C++); language= overrides it.
+%       rounded corners on the color "code background", with no border; the code is in \ttfamily at
+%       \betterlistingssize, highlighted (keywords in "code keyword", strings in "code string", comments in
+%       "code comment", preprocessor directives in "code directive"), with line numbers in "code number", and
+%       long lines break with an arrow. The language comes from the file's extension (file=, or the input file's
+%       name; C++, Python, Java, bash, Lua, LaTeX and others), else \betterlistingsdefaultlanguage (C++);
+%       language= overrides it.
 %       caption= and title= are a caption above the box (below it with captionpos=b), numbered like listings'
 %       own ("Listing 1: ..."), with label= and an entry in the list of listings.
 %       In Beamer, a block longer than a slide is split into boxes of whole lines that fit a slide, with the
@@ -45,9 +46,8 @@
 %       A document or theme may define any of them; otherwise "code background" is made from the alternate
 %       background colorAltBG, or when there is none from the theme's background (Beamer's normal text
 %       background), or from white: the same hue with a quarter of the saturation, a step darker, or a step
-%       lighter if it is dark. "code header" is a step further, "code border" a step further again, "code
-%       frame" is colorAccent, or a step beyond the border, and "code shadow" is the code frame color mixed
-%       60% into the background. The highlighting colors are those of the One Light theme on a light code
+%       lighter if it is dark. "code header" is a step further, "code frame" is colorAccent, or two steps
+%       beyond the header, and "code shadow" is the code frame color mixed 60% into the background. The highlighting colors are those of the One Light theme on a light code
 %       background and of One Dark on a dark one; comments are the text color ("code text", Beamer's normal text
 %       color or black) halfway to the background.
 %
@@ -111,13 +111,13 @@
     \@ifundefinedcolor { code~header }
       { \__betterlistings_step:nnn { code~background } { code~header } { 1 } }
       { }
-    \@ifundefinedcolor { code~border }
-      { \__betterlistings_step:nnn { code~header } { code~border } { 1 } }
-      { }
     \@ifundefinedcolor { code~frame }
       {
         \@ifundefinedcolor { colorAccent }
-          { \__betterlistings_step:nnn { code~border } { code~frame } { 1 } }
+          {
+            \__betterlistings_step:nnn { code~header } { betterlistings@step } { 1 }
+            \__betterlistings_step:nnn { betterlistings@step } { code~frame } { 1 }
+          }
           { \colorlet { code~frame } { colorAccent } }
       }
       { }
@@ -597,7 +597,8 @@
 	betterlistings/.style={
 		enhanced, breakable, listing only,
 		arc=1.2mm, boxrule=0.3pt,
-		colback=code background, colframe=code border, colupper=betterlistings@fg,
+		% No border around the body (the frame is in the background color); the header has the accent outline.
+		colback=code background, colframe=code background, colupper=betterlistings@fg,
 		left=1ex, right=1ex, top=0.6ex, bottom=0.6ex,
 		before skip=1ex, after skip=1ex,
 		% The caption is above (or below) the box, not in it.
@@ -610,8 +611,8 @@
 		before upper={\betterlistings@inboxtrue},
 	},
 	betterlistings block/.code n args={3}{\betterlistings@block{#1}{#2}{#3}},
-	% A box with a header: the header's outline in the accent color (over the box's thin border, down to the
-	% rule under the header), and a short shadow from that rule onto the body, which ends before the first line
+	% A box with a header: the header's outline in the accent color (over the box's frame, down to the rule
+	% under the header), and a short shadow from that rule onto the body, which ends before the first line
 	% (the box has more padding at the top for it).
 	betterlistings header/.style={
 		top=0.8ex,

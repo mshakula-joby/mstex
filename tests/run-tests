@@ -539,10 +539,10 @@ print("    SIZEWORD widths %s" % w)
 sys.exit(0 if len(w) == 2 and abs(w[0] - w[1]) < 0.2 else 1)
 PY
 			# Orange palette: the block is on the code background (Joby Off-White, less saturated and a step darker),
-			# with a thin border in the code border color (gray); the accent color (Joby Yellow, FFB300) is only
-			# around its header (language=C++ gives it one), above the body.
+			# with no border around the body (nothing in the color a step beyond the header); the accent color (Joby
+			# Yellow, FFB300) is only around its header (language=C++ gives it one), above the body.
 			pdftoppm -r 300 -f 1 -l 1 -png "build/$name.pdf" "build/$name-img"
-			python3 -I - build/$name-img-*.png <<'PY' && pass "$name block has a neutral border, the accent only at its header" || fail "$name block has a neutral border, the accent only at its header"
+			python3 -I - build/$name-img-*.png <<'PY' && pass "$name block has no border, the accent only at its header" || fail "$name block has no border, the accent only at its header"
 import sys
 from PIL import Image
 px = list(Image.open(sys.argv[1]).convert("RGB").getdata())
@@ -553,16 +553,20 @@ def code_background(rgb):  # the base's hue, a quarter of its saturation, a step
     v = 0.1 + 0.9 * v if v < 0.5 else 0.9 * v
     return tuple(round(255 * c) for c in colorsys.hsv_to_rgb(h, s / 4, v))
 code = code_background((0xF5, 0xF4, 0xDF))
-def step(rgb):  # a step darker, same hue and saturation: the header from the code background, the border from it
-    h, s, v = colorsys.rgb_to_hsv(*(c / 255 for c in rgb))
-    return tuple(round(255 * c) for c in colorsys.hsv_to_rgb(h, s, 0.9 * v))
-border = step(step(code))
 im = Image.open(sys.argv[1]).convert("RGB")
 w, h = im.size
 rows = lambda c, t: [y for y in range(h) for x in range(0, w, 3) if sum(abs(a - b) for a, b in zip(im.getpixel((x, y)), c)) < t]
 accent, body = rows((0xFF, 0xB3, 0x00), 30), rows(code, 4)
-print("    accent rows %d-%d, body rows %d-%d, border %d px" % (min(accent), max(accent), min(body), max(body), near(border, 12)))
-sys.exit(0 if near(border, 12) > 300 and max(accent) < min(body) + 40 and max(body) > max(accent) + 50 else 1)
+print("    accent rows %d-%d, body rows %d-%d" % (min(accent), max(accent), min(body), max(body)))
+# No border: on a row through the body, the pixels between the slide and the code background are never darker
+# than both (a border line would be).
+y = (min(body) + max(body)) // 2
+lum = lambda p: sum(p) / 3
+slide = im.getpixel((3, y))
+xs = [x for x in range(w) if sum(abs(a - b) for a, b in zip(im.getpixel((x, y)), code)) < 4]
+edge = [lum(im.getpixel((x, y))) for x in range(min(xs) - 6, min(xs))] + [lum(im.getpixel((x, y))) for x in range(max(xs) + 1, max(xs) + 7)]
+print("    edge luminance %d..%d, slide %d, code %d" % (min(edge), max(edge), lum(slide), lum(code)))
+sys.exit(0 if min(edge) >= min(lum(slide), lum(code)) - 3 and max(accent) < min(body) + 40 and max(body) > max(accent) + 50 else 1)
 PY
 			;;
 		common)
