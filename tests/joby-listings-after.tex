@@ -1,11 +1,13 @@
-% listings loaded after the theme: code blocks are in \tiny (the same word as in \texttt{\tiny ...} after the
-% block), on the code background (gray in colorAltBG), with a hairline border in the accent color.
+% listings loaded after the theme, all listings in the betterlisting style: code blocks are in \tiny (the same
+% word as in \texttt{\tiny ...} after the block), on the code background (gray in colorAltBG), with a hairline
+% border in the accent color.
 \documentclass[aspectratio=169,10pt]{beamer}
 
 \usetheme[palette=orange]{joby}
 \usepackage{listings}
 \title{Listings after}
 \author{Test Author}
+\lstset{style=betterlisting}
 \begin{document}
 \begin{frame}[fragile]{Code}
 	\begin{lstlisting}[language=C++]

@@ -1,4 +1,5 @@
-% listings loaded before the theme: code blocks get the code background (gray in colorAltBG) and a hairline frame in the accent color.
+% listings loaded before the theme, and a listing that opts into the betterlisting style by itself: it compiles,
+% boxed.
 \documentclass[aspectratio=169,10pt]{beamer}
 \usepackage{listings}
 \usetheme[palette=orange]{joby}
@@ -7,7 +8,7 @@
 \author{Test Author}
 \begin{document}
 \begin{frame}[fragile]{Code}
-	\begin{lstlisting}[language=C++]
+	\begin{lstlisting}[style=betterlisting, language=C++]
 auto& rBuf = GetBuffer(eFccChannel::HousekeepingToAlgorithm0);
 rBuf.Write(rMessage);  // 500 byte slot
 	\end{lstlisting}

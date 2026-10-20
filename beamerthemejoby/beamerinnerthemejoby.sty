@@ -203,11 +203,14 @@
 \newcommand{\jobylistentry}[4]{%
 	\noindent\hbox to \linewidth{\hbox to 5em{#1~#2\hss}#3\leaders\hbox{.}\hfill~#4}\par
 }
-% Beamer's \caption has already stepped the counter, so \the<type> is this caption's number.
+% Beamer's \caption has already stepped the counter, so \the<type> is this caption's number. Captions of other
+% types (a listing's) have no list here.
 \let\jobyorigmakecaption\beamer@makecaption
 \long\def\beamer@makecaption#1#2{%
-	\addtocontents{\csname jobylistfile@#1\endcsname}{%
-		\protect\jobylistentry{\csname #1name\endcsname}{\csname the#1\endcsname}{#2}{\insertframenumber}}%
+	\ifcsname jobylistfile@#1\endcsname
+		\addtocontents{\csname jobylistfile@#1\endcsname}{%
+			\protect\jobylistentry{\csname #1name\endcsname}{\csname the#1\endcsname}{#2}{\insertframenumber}}%
+	\fi
 	\jobyorigmakecaption{#1}{#2}%
 }
 \@namedef{jobylistfile@figure}{lof}

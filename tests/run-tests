@@ -276,9 +276,58 @@ PY
 			expect_text "DRAFT_CODE" "$name"; expect_text "src/DRAFT_PATH.cpp" "$name"
 			expect_no_text "DROPPED-PICTURE" "$name"; expect_text "TikZ picture" "$name"
 			;;
+		betterlistings-plain)
+			# No box, header or line numbers: no code background, no language name, no line number 1.
+			expect_text "PLAIN_CODE" "$name"; expect_no_text "C++" "$name"
+			pdftotext -f 1 -l 1 "build/$name.pdf" - | grep -qx "2" && fail "$name has no line numbers" || pass "$name has no line numbers"
+			pdftoppm -r 100 -f 1 -l 1 -png "build/$name.pdf" "build/$name-img"
+			python3 -I - build/$name-img-*.png <<'PY' && pass "$name is not boxed" || fail "$name is not boxed"
+import sys, colorsys
+from PIL import Image
+px = list(Image.open(sys.argv[1]).convert("RGB").getdata())
+hh, s, v = colorsys.rgb_to_hsv(*(c / 255 for c in (0xF5, 0xF4, 0xDF)))
+code = tuple(round(255 * c) for c in colorsys.hsv_to_rgb(hh, s / 4, 0.9 * v))
+sys.exit(0 if sum(1 for p in px if sum(abs(a - b) for a, b in zip(p, code)) < 4) < 50 else 1)
+PY
+			;;
+		betterlistings-split)
+			# Several slides; each slide's numbers go on from the last; the caption is above the first box; the code
+			# stays above the footer on every slide.
+			n=$(pdfinfo "build/$name.pdf" | awk '/Pages/{print $2}')
+			[ "$n" -ge 3 ] && pass "$name the block is split over $n slides" || fail "$name the block is split over slides ($n)"
+			expect_text "Listing 1: SPLIT-CAPTION" "$name"; expect_text "LINE001" "$name"; expect_text "LINE100" "$name"
+			pdftotext -bbox "build/$name.pdf" "build/$name.bbox.html"
+			python3 -I - "build/$name.bbox.html" <<'PY' && pass "$name numbers go on, and every box fits its slide" || fail "$name numbers go on, and every box fits its slide"
+import re, sys
+html = open(sys.argv[1]).read()
+pages = re.findall(r'<page width="([\d.]+)" height="([\d.]+)">(.*?)</page>', html, re.S)
+expect = 1
+for w, h, body in pages:
+    words = [(float(y), t) for y, t in re.findall(r'yMin="[\d.]+" xMax="[\d.]+" yMax="([\d.]+)">([^<]*)<', body)]
+    lines = sorted(int(t[4:]) for y, t in words if re.fullmatch(r"LINE\d{3}", t))
+    if not lines: continue
+    assert lines[0] == expect and lines == list(range(lines[0], lines[-1] + 1)), (expect, lines[:3])
+    expect = lines[-1] + 1
+    assert max(y for y, t in words if re.fullmatch(r"LINE\d{3}", t)) < 0.93 * float(h), "past the footer"
+assert expect == 101, expect
+# The caption is on the slide of the first box, above it.
+cap = [(i, float(y)) for i, (w, h, body) in enumerate(pages) for y, t in re.findall(r'yMin="([\d.]+)" xMax="[\d.]+" yMax="[\d.]+">([^<]*)<', body) if t == "SPLIT-CAPTION"]
+first = [(i, float(y)) for i, (w, h, body) in enumerate(pages) for y, t in re.findall(r'yMin="([\d.]+)" xMax="[\d.]+" yMax="[\d.]+">([^<]*)<', body) if t == "LINE001"]
+assert cap and first and cap[0][0] == first[0][0] and cap[0][1] < first[0][1], ("the caption is above the code", cap, first)
+PY
+			;;
 		betterlistings-cleveref)
 			# The build finishes (no loop); \cref names the listing.
 			expect_text "CLEVEREF_CODE" "$name"; expect_text "See listing 1." "$name"
+			# The caption is above the block, numbered.
+			pdftotext -bbox "build/$name.pdf" "build/$name.bbox.html"
+			python3 -I - "build/$name.bbox.html" <<'PY' && pass "$name caption 'Listing 1: A listing' is above the block" || fail "$name caption 'Listing 1: A listing' is above the block"
+import re, sys
+words = [(float(y), t) for y, t in re.findall(r'yMin="([\d.]+)" xMax="[\d.]+" yMax="[\d.]+">([^<]*)<', open(sys.argv[1]).read())]
+text = " ".join(t for y, t in words)
+y = dict((t, y) for y, t in words)
+sys.exit(0 if "Listing 1: A listing" in text and y["Listing"] < y["CLEVEREF_CODE"] else 1)
+PY
 			;;
 		betterlistings-minted)
 			expect_text "MINTED_CODE" "$name"

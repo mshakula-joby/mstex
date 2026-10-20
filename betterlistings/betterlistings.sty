@@ -1,26 +1,33 @@
 % betterlistings.sty
 %
-% Code in slides and documents, with one look for blocks (listings, and minted when it is loaded) and inline
-% code. Loads listings, tcolorbox and xcolor. Works with any class; with Beamer, captions use its caption font
-% and the code its normal text color.
+% Code in slides and documents: a look for code blocks (a listings style, and minted's settings), both opt-in,
+% and inline code. Loads listings, tcolorbox and xcolor. Works with any class; with Beamer, captions use its
+% caption font and the code its normal text color.
 %
-%   Code blocks
-%       \begin{lstlisting}[<options>] ... \end{lstlisting} and \lstinputlisting[<options>]{<file>} (the same
-%       commands and listings options as always) are boxes with rounded corners on the color "code background",
-%       with a hairline border in "code frame", that break across pages and frames (allowframebreaks). The code
-%       is in \ttfamily at \betterlistingssize, highlighted (bold keywords in "code keyword", strings in "code
+%   Code blocks: the listings style betterlisting
+%       Opt-in: \begin{lstlisting}[style=betterlisting] ... and \lstinputlisting[style=betterlisting]{<file>},
+%       or \lstset{style=betterlisting} for all listings; listings without it are plain listings, as without
+%       this package (betterlisting=false turns it off again for one). A block in the style is a box with
+%       rounded corners on the color "code background", with a hairline border in "code frame"; the code is in
+%       \ttfamily at \betterlistingssize, highlighted (bold keywords in "code keyword", strings in "code
 %       string", comments in "code comment"), with line numbers in "code number", and long lines break with an
 %       arrow. The language comes from the file's extension (file=, or the input file's name; C++, Python,
 %       Java, bash, Lua, LaTeX and others), else \betterlistingsdefaultlanguage (C++); language= overrides it.
-%       Captions (caption=) are kept, in the box.
+%       caption= and title= are a caption above the box (below it with captionpos=b), numbered like listings'
+%       own ("Listing 1: ..."), with label= and an entry in the list of listings.
+%       In Beamer, a block longer than a slide is split into boxes of whole lines that fit a slide, with the
+%       line numbers going on, which an allowframebreaks frame puts on consecutive slides (a box cannot break
+%       across slides). splitlines=<n> sets the most lines in a box (0: never split). Boxes break across pages
+%       by themselves elsewhere.
 %   file=<path>
-%       A listings key: the block gets a header on "code header" with the language, in bold, and <path> in
-%       \ttfamily, which wraps after / _ . and - (\begin{lstlisting}[file=src/main.cpp] ...,
-%       \lstinputlisting[file=src/main.cpp]{listings/main.cpp}). A block with language= gets the header too,
-%       with the language only.
+%       A key of the style: the block gets a header on "code header" with the language, in bold, and <path> in
+%       \ttfamily, which wraps after / _ . and - (\begin{lstlisting}[style=betterlisting, file=src/main.cpp]).
+%       A block with language= gets the header too, with the language only.
 %   \betterlistingssize
 %       The font size of code blocks: empty (the surrounding size) unless redefined (the Joby theme makes it
 %       \tiny).
+%   \betterlistingsminted
+%       minted blocks get the colors, frame and size of the style (opt-in as well).
 %   \code{<code>}
 %       Inline code: <code> in \ttfamily on a rounded rectangle (a "pill") in "code background", with the text in
 %       "code text" if it is defined, else in the surrounding text color. The line may break at a space, where a
@@ -140,15 +147,28 @@
 \AtBeginDocument{\csname __betterlistings_colors:\endcsname}
 
 % --- Code blocks ------------------------------------------------------------------------------------------
-% A block is a tcolorbox (breakable, rounded, on the code background, with a hairline border in the code frame
-% color) with the listing inside it, without a frame or background of its own: listings paints its background
-% line by line, which viewers show with seams. lstlisting is redefined as a tcolorbox listing, and
-% \lstinputlisting as one too, except inside such a box, where tcolorbox itself calls \lstinputlisting.
+% The look is the listings style betterlisting, which a document opts into, per block (style=betterlisting) or
+% for all of them (\lstset{style=betterlisting}); a listing without it is a plain listing, as without this
+% package. The style sets the key betterlisting=true, which marks the blocks to box.
+% A boxed block is a tcolorbox (rounded, on the code background, with a hairline border in the code frame color)
+% with the listing inside it, without a frame or background of its own: listings paints its background line by
+% line, which viewers show with seams. Its caption (caption= or title=) is above it, numbered ("Listing 1: ...").
+% lstlisting writes its body to a file (tcolorbox's \tcbwritetemp) and shows it the way \lstinputlisting shows a
+% file: as boxes if it has the style, else with listings' own \lstinputlisting. Inside a box, tcolorbox calls
+% \lstinputlisting itself, which is then listings' own.
+% In Beamer a box cannot break across slides (Beamer splits a frame itself, so the box never sees a page break),
+% so a block longer than a slide is made of several boxes of whole lines, with the line numbers going on, which
+% allowframebreaks puts on consecutive slides.
 \RequirePackage{tcolorbox}
 \tcbuselibrary{listings,breakable,skins}
 \newcommand{\betterlistingssize}{}
 \newcommand{\betterlistingsdefaultlanguage}{C++}
-\lstset{
+% Keys that listings ignores, read once before a block.
+\lst@Key{betterlisting}{false}{\def\betterlistings@on{#1}}
+\lst@Key{file}{}{\def\betterlistings@file{#1}}
+\lst@Key{splitlines}{}{\def\betterlistings@splitlines{#1}}
+\lstdefinestyle{betterlisting}{
+	betterlisting=true,
 	basicstyle=\ttfamily\betterlistingssize\betterlistings@textcolor,
 	keywordstyle=\bfseries\color{code keyword},
 	stringstyle=\color{code string},
@@ -170,19 +190,28 @@
 	columns=fullflexible,
 	keepspaces=true,
 }
-% listings sets its captions itself, not through Beamer's caption templates, so give them Beamer's caption font.
-\@ifclassloaded{beamer}{%
-	\let\betterlistings@lstmakecaption\lst@makecaption
-	\long\def\lst@makecaption#1#2{{\usebeamerfont{caption}\betterlistings@lstmakecaption{#1}{#2}}}%
-}{}
-
-% file=<path>: listings ignores it; the block's options are read once beforehand to find it (and the language).
-\lst@Key{file}{}{\gdef\betterlistings@file{#1}}
 \newif\ifbetterlistings@inbox
 \ExplSyntaxOn
 \tl_new:N \l__betterlistings_lang_tl
 \tl_new:N \l__betterlistings_title_tl
 \tl_new:N \l__betterlistings_options_tl
+\tl_new:N \l__betterlistings_explicit_tl
+\tl_new:N \l__betterlistings_name_tl
+\seq_new:N \l__betterlistings_match_seq
+\tl_new:N \g__betterlistings_on_tl
+\tl_new:N \g__betterlistings_file_tl
+\tl_new:N \g__betterlistings_split_tl
+\tl_new:N \g__betterlistings_caption_tl
+\tl_new:N \g__betterlistings_short_tl
+\tl_new:N \g__betterlistings_label_tl
+\tl_new:N \g__betterlistings_captionpos_tl
+\int_new:N \l__betterlistings_first_int
+\int_new:N \l__betterlistings_last_int
+\int_new:N \l__betterlistings_number_int
+\int_new:N \l__betterlistings_size_int
+\int_new:N \l__betterlistings_max_int
+\dim_new:N \g__betterlistings_line_dim
+\bool_new:N \l__betterlistings_range_bool
 % The language for a file name: from its extension, else the default.
 \cs_new_protected:Npn \__betterlistings_language:n #1
   {
@@ -202,33 +231,58 @@
           { \betterlistingsdefaultlanguage }
       }
   }
-% Sets up a block from its listings options #1 (and #2, the name of the input file, if any): the options for
-% listings (the language first, so that #1 may override it), and the header: the language, in bold, when it was
-% set (language=) or the block has a file, then the file= path, which may break after / _ . -.
-\tl_new:N \l__betterlistings_explicit_tl
-\tl_new:N \l__betterlistings_name_tl
-\seq_new:N \l__betterlistings_match_seq
+% Reads a block's listings options #1, over the current settings: whether it has the style, its file, split and
+% caption (caption= or title=, with its short form and label, and where it goes).
+\cs_new_protected:Npn \__betterlistings_scan:n #1
+  {
+    \group_begin:
+      \cs_set_eq:NN \lst@caption \c_empty_tl
+      \cs_set_eq:NN \lst@@caption \c_empty_tl
+      \cs_set_eq:NN \lst@title \c_empty_tl
+      \cs_set_eq:NN \lst@label \c_empty_tl
+      \def \betterlistings@file { }
+      \def \betterlistings@splitlines { }
+      \lstset {#1}
+      \tl_gset:No \g__betterlistings_on_tl { \betterlistings@on }
+      \tl_gset:No \g__betterlistings_file_tl { \betterlistings@file }
+      \tl_gset:No \g__betterlistings_split_tl { \betterlistings@splitlines }
+      \tl_gset:No \g__betterlistings_label_tl { \lst@label }
+      \tl_gset:No \g__betterlistings_captionpos_tl { \lst@captionpos }
+      \tl_if_empty:NTF \lst@title
+        {
+          \token_if_eq_meaning:NNTF \lst@caption \relax
+            { \tl_gclear:N \g__betterlistings_caption_tl \tl_gclear:N \g__betterlistings_short_tl }
+            {
+              \tl_gset:No \g__betterlistings_caption_tl { \lst@caption }
+              \tl_gset:No \g__betterlistings_short_tl { \lst@@caption }
+            }
+        }
+        {
+          \tl_gset:No \g__betterlistings_caption_tl { \lst@title }
+          \tl_gset:No \g__betterlistings_short_tl { \lst@title }
+        }
+    \group_end:
+  }
+% Sets up a boxed block from its listings options #1 (and #2, the name of the input file, if any): the options
+% for listings (the language first, so that #1 may override it), and the header: the language, in bold, when it
+% was set (language=) or the block has a file, then the file= path, which may break after / _ . -.
 \cs_new_protected:Npn \__betterlistings_setup:nn #1#2
   {
-    \gdef \betterlistings@file { }
-    \group_begin: \lstset {#1} \group_end:
-    % The language given in #1, if any.
     \tl_clear:N \l__betterlistings_explicit_tl
     \regex_extract_once:nnNT { language \s* = \s* \{? ([^,\}]*) } { \tl_to_str:n {#1} } \l__betterlistings_match_seq
       { \tl_set:Ne \l__betterlistings_explicit_tl { \seq_item:Nn \l__betterlistings_match_seq { 2 } } }
     \tl_if_empty:NTF \l__betterlistings_explicit_tl
       {
-        \tl_if_empty:NTF \betterlistings@file
+        \tl_if_empty:NTF \g__betterlistings_file_tl
           { \__betterlistings_language:n {#2} }
-          { \exp_args:No \__betterlistings_language:n { \betterlistings@file } }
+          { \exp_args:NV \__betterlistings_language:n \g__betterlistings_file_tl }
       }
       { \tl_set_eq:NN \l__betterlistings_lang_tl \l__betterlistings_explicit_tl }
     \tl_set:Ne \l__betterlistings_options_tl
       { language = { \exp_not:V \l__betterlistings_lang_tl } , \exp_not:n {#1} }
-    % The header.
     \tl_clear:N \l__betterlistings_title_tl
     \bool_lazy_or:nnT
-      { ! \tl_if_empty_p:N \l__betterlistings_explicit_tl } { ! \tl_if_empty_p:N \betterlistings@file }
+      { ! \tl_if_empty_p:N \l__betterlistings_explicit_tl } { ! \tl_if_empty_p:N \g__betterlistings_file_tl }
       {
         % The language's name: a dialect like [LaTeX]TeX by its dialect, [5.3]Lua by the language.
         \tl_set:Ne \l__betterlistings_name_tl { \tl_to_str:N \l__betterlistings_lang_tl }
@@ -237,22 +291,227 @@
         \tl_set:Ne \l__betterlistings_title_tl
           { \exp_not:N \textbf { \exp_not:V \l__betterlistings_name_tl } }
       }
-    \tl_if_empty:NF \betterlistings@file
+    \tl_if_empty:NF \g__betterlistings_file_tl
       {
-        \tl_set:Ne \l__betterlistings_name_tl { \tl_to_str:N \betterlistings@file }
+        \tl_set:Ne \l__betterlistings_name_tl { \tl_to_str:N \g__betterlistings_file_tl }
         \regex_replace_all:nnN { ([/_.\-]) } { \1 \c{allowbreak} } \l__betterlistings_name_tl
         \tl_put_right:Ne \l__betterlistings_title_tl
           { \exp_not:N \quad \exp_not:V \l__betterlistings_name_tl }
       }
   }
-\cs_new_eq:NN \betterlistings@setup \__betterlistings_setup:nn
-% The tcolorbox options for the block set up last: its header, if it has one, and its listings options.
-\cs_new_protected:Npn \betterlistings@block
+% The caption, numbered like listings' own ("Listing 1: ..."), with its label and its entry in the list of
+% listings, in the caption font (Beamer's).
+\cs_new_protected:Npn \__betterlistings_caption:
+  {
+    \tl_if_empty:NF \g__betterlistings_caption_tl
+      {
+        \par
+        \refstepcounter { lstlisting }
+        \tl_if_empty:NF \g__betterlistings_label_tl { \exp_args:NV \label \g__betterlistings_label_tl }
+        \exp_args:Nnne \addcontentsline { \ext@lstlisting } { lstlisting }
+          { \exp_not:N \protect \exp_not:N \numberline { \thelstlisting } \exp_not:V \g__betterlistings_short_tl }
+        % Beamer numbers a caption from its type (\beamer@makecaption, as its \caption does), other classes
+        % from the label (\lst@makecaption, as listings does). Beamer's \caption does not break after it.
+        \group_begin:
+          \cs_if_exist:NTF \beamer@makecaption
+            { \exp_args:NnV \beamer@makecaption { lstlisting } \g__betterlistings_caption_tl \par \nobreak }
+            {
+              \skip_set:Nn \abovecaptionskip { \smallskipamount }
+              \skip_set:Nn \belowcaptionskip { \smallskipamount }
+              \exp_args:NNV \lst@makecaption \fnum@lstlisting \g__betterlistings_caption_tl
+              \nobreak
+            }
+        \group_end:
+      }
+  }
+% The lines of the block, \l__betterlistings_first_int to \l__betterlistings_last_int, if they can be told (from
+% firstline, lastline or a single linerange, and the number of lines of the file #2, counted in Lua); false if not.
+\prg_new_protected_conditional:Npnn \__betterlistings_range:nn #1#2 { T, TF }
+  {
+    \tl_set:Ne \l__betterlistings_name_tl { \tl_to_str:n {#1} }
+    \int_set:Nn \l__betterlistings_first_int { 1 }
+    \int_set:Nn \l__betterlistings_last_int { -1 }
+    \bool_set_true:N \l_tmpa_bool
+    \regex_extract_once:nVNTF { linerange \s* = \s* \{? \s* (\d+) \s* - \s* (\d+) \s* (,|\}|\Z) }
+      \l__betterlistings_name_tl \l__betterlistings_match_seq
+      {
+        \int_set:Nn \l__betterlistings_first_int { \seq_item:Nn \l__betterlistings_match_seq { 2 } }
+        \int_set:Nn \l__betterlistings_last_int { \seq_item:Nn \l__betterlistings_match_seq { 3 } }
+      }
+      {
+        % Any other linerange (several ranges, markers) is left to listings, unsplit.
+        \regex_match:nVT { linerange } \l__betterlistings_name_tl { \bool_set_false:N \l_tmpa_bool }
+        \regex_extract_once:nVNT { firstline \s* = \s* (\d+) } \l__betterlistings_name_tl \l__betterlistings_match_seq
+          { \int_set:Nn \l__betterlistings_first_int { \seq_item:Nn \l__betterlistings_match_seq { 2 } } }
+        \regex_extract_once:nVNT { lastline \s* = \s* (\d+) } \l__betterlistings_name_tl \l__betterlistings_match_seq
+          { \int_set:Nn \l__betterlistings_last_int { \seq_item:Nn \l__betterlistings_match_seq { 2 } } }
+      }
+    \bool_if:NT \l_tmpa_bool
+      {
+        \int_compare:nNnT \l__betterlistings_last_int < { 0 }
+          {
+            \sys_if_engine_luatex:TF
+              {
+                \int_set:Nn \l__betterlistings_last_int
+                  { \lua_now:e { betterlistings.countlines("\lua_escape:e {#2}") } }
+              }
+              { \bool_set_false:N \l_tmpa_bool }
+          }
+      }
+    \bool_if:NTF \l_tmpa_bool
+      { \int_compare:nNnTF \l__betterlistings_last_int < \l__betterlistings_first_int { \prg_return_false: } { \prg_return_true: } }
+      { \prg_return_false: }
+  }
+\cs_generate_variant:Nn \regex_extract_once:nnNTF { nV }
+\cs_generate_variant:Nn \regex_extract_once:nnNT { nV }
+\cs_generate_variant:Nn \regex_match:nnT { nV }
+% Shows a block: listings options #1, #2 the name of the input file (for the language; empty for lstlisting),
+% #3 the file to read.
+\cs_new_protected:Npn \__betterlistings_show:nnn #1#2#3
+  {
+    \__betterlistings_scan:n {#1}
+    \str_if_eq:VnTF \g__betterlistings_on_tl { true }
+      { \__betterlistings_boxes:nnn {#1} {#2} {#3} }
+      { \betterlistings@lstinputlisting [#1] {#3} }
+  }
+\cs_new_protected:Npn \__betterlistings_boxes:nnn #1#2#3
+  {
+    \__betterlistings_setup:nn {#1} {#2}
+    % The most lines in a box: splitlines=, else in Beamer as many as fill 0.8 of the text height (leaving room
+    % for the header and caption), at the lines' average height in this block, with the long lines that wrap:
+    % the block's lines are typeset once, at the box's width, to measure it. Elsewhere boxes break by themselves.
+    \int_zero:N \l__betterlistings_max_int
+    \bool_set_false:N \l__betterlistings_range_bool
+    \__betterlistings_range:nnT {#1} {#3} { \bool_set_true:N \l__betterlistings_range_bool }
+    \tl_if_empty:NTF \g__betterlistings_split_tl
+      {
+        \bool_lazy_and:nnT { \cs_if_exist_p:N \insertframenumber } { \l__betterlistings_range_bool }
+          {
+            \hbox_set:Nn \l_tmpa_box
+              {
+                \vbox:n
+                  {
+                    \dim_set:Nn \hsize { \linewidth - 2ex - 0.6pt }
+                    \dim_set_eq:NN \linewidth \hsize
+                    \betterlistings@inboxtrue
+                    \use:e
+                      {
+                        \exp_not:N \betterlistings@lstinputlisting
+                          [
+                            \exp_not:V \l__betterlistings_options_tl ,
+                            linerange =
+                              { \int_use:N \l__betterlistings_first_int - \int_use:N \l__betterlistings_last_int } ,
+                            nolol , caption = { } , title = { } , label = { }
+                          ]
+                          { \exp_not:n {#3} }
+                      }
+                  }
+              }
+            \dim_gset:Nn \g__betterlistings_line_dim
+              {
+                ( \box_ht:N \l_tmpa_box + \box_dp:N \l_tmpa_box )
+                / ( \l__betterlistings_last_int - \l__betterlistings_first_int + 1 )
+              }
+            \dim_compare:nNnT \g__betterlistings_line_dim > { 0pt }
+              {
+                \int_set:Nn \l__betterlistings_max_int
+                  {
+                    \dim_ratio:nn
+                      { 0.8 \textheight - \tl_if_empty:NTF \g__betterlistings_caption_tl { 4 } { 7 } \g__betterlistings_line_dim }
+                      { \g__betterlistings_line_dim }
+                  }
+              }
+          }
+      }
+      { \int_set:Nn \l__betterlistings_max_int { \g__betterlistings_split_tl } }
+    \bool_lazy_and:nnTF { \int_compare_p:nNn \l__betterlistings_max_int > { 0 } } { \l__betterlistings_range_bool }
+      {
+        \int_set:Nn \l__betterlistings_size_int
+          { \l__betterlistings_last_int - \l__betterlistings_first_int + 1 }
+        \int_compare:nNnTF \l__betterlistings_size_int > \l__betterlistings_max_int
+          {
+            % Even boxes: as few as hold the lines (n of them), as full as each other.
+            \int_set:Nn \l_tmpa_int
+              {
+                \int_div_truncate:nn
+                  { \l__betterlistings_size_int + \l__betterlistings_max_int - 1 } { \l__betterlistings_max_int }
+              }
+            \int_set:Nn \l__betterlistings_size_int
+              { \int_div_truncate:nn { \l__betterlistings_size_int + \l_tmpa_int - 1 } { \l_tmpa_int } }
+            \int_step_inline:nnnn \l__betterlistings_first_int \l__betterlistings_size_int \l__betterlistings_last_int
+              {
+                \__betterlistings_box:nene
+                  { ##1 }
+                  { \int_min:nn { ##1 + \l__betterlistings_size_int - 1 } { \l__betterlistings_last_int } }
+                  {#3}
+                  { \int_compare:nNnTF {##1} = \l__betterlistings_first_int { first } { } }
+              }
+          }
+          { \__betterlistings_box:nnnn { } { } {#3} { first } }
+      }
+      { \__betterlistings_box:nnnn { } { } {#3} { first } }
+    \str_if_eq:VnT \g__betterlistings_captionpos_tl { b } { \__betterlistings_caption: }
+  }
+% A box of lines #1 to #2 (all lines if empty) of the file #3; #4 is first for the block's first box, which has
+% the caption above it (unless the caption goes below). In Beamer the caption and the box are one \vbox, so that
+% they are on the same slide (a box cannot break there anyway); in a list it is moved by the list's margin, as
+% a paragraph would be. Elsewhere nothing breaks between them, and the box may break across pages.
+\cs_new_protected:Npn \__betterlistings_box:nnnn #1#2#3#4
+  {
+    \bool_lazy_all:nTF
+      {
+        { \str_if_eq_p:nn {#4} { first } }
+        { ! \tl_if_empty_p:N \g__betterlistings_caption_tl }
+        { ! \str_if_eq_p:Vn \g__betterlistings_captionpos_tl { b } }
+      }
+      {
+        \cs_if_exist:NTF \insertframenumber
+          {
+            \par
+            \tex_moveright:D \@totalleftmargin \vbox:n
+              {
+                \dim_set_eq:NN \hsize \linewidth
+                \dim_zero:N \@totalleftmargin
+                \skip_zero:N \leftskip
+                \skip_zero:N \rightskip
+                \__betterlistings_caption:
+                \tcbinputlisting
+                  { betterlistings , betterlistings~block = {#1} {#2} {#1} , listing~file = {#3} , before = { } }
+              }
+          }
+          {
+            \__betterlistings_caption:
+            \tcbinputlisting
+              {
+                betterlistings , betterlistings~block = {#1} {#2} {#1} , listing~file = {#3} ,
+                before = { \par \nobreak \vspace { 1ex } \nobreak }
+              }
+          }
+      }
+      { \tcbinputlisting { betterlistings , betterlistings~block = {#1} {#2} {#1} , listing~file = {#3} } }
+  }
+\cs_generate_variant:Nn \__betterlistings_box:nnnn { nene }
+% The tcolorbox options for a box of the block set up last: its header, if it has one, and its listings options;
+% for a box of lines #1 to #2 of a split block (#3 is #1), with those lines, numbered on from the box before
+% (firstnumber=last) except in the first box, which has the block's own numbering.
+\cs_new_protected:Npn \betterlistings@block #1#2#3
   {
     \tl_if_empty:NF \l__betterlistings_title_tl
       { \exp_args:Ne \pgfkeysalso { title = { \exp_not:V \l__betterlistings_title_tl } } }
-    \exp_args:Ne \pgfkeysalso { listing~options = { \exp_not:V \l__betterlistings_options_tl } }
+    \tl_if_empty:nTF {#1}
+      { \exp_args:Ne \pgfkeysalso { listing~options = { \exp_not:V \l__betterlistings_options_tl } } }
+      {
+        \exp_args:Ne \pgfkeysalso
+          {
+            listing~options =
+              {
+                \exp_not:V \l__betterlistings_options_tl , linerange = { #1 - #2 }
+                \int_compare:nNnF {#3} = \l__betterlistings_first_int { , firstnumber = last }
+              }
+          }
+      }
   }
+\cs_new_eq:NN \betterlistings@show \__betterlistings_show:nnn
 \ExplSyntaxOff
 \tcbset{
 	betterlistings/.style={
@@ -261,24 +520,25 @@
 		colback=code background, colframe=code frame, colupper=betterlistings@fg,
 		left=1ex, right=1ex, top=0.6ex, bottom=0.6ex,
 		before skip=1ex, after skip=1ex,
-		listing remove caption=false,
+		% The caption is above (or below) the box, not in it.
+		listing remove caption,
 		colbacktitle=code header, coltitle=betterlistings@fg,
 		fonttitle=\ttfamily\betterlistingssize, halign title=flush left,
 		titlerule=0.3pt, toptitle=0.4ex, bottomtitle=0.4ex, lefttitle=1ex, righttitle=1ex,
 		before upper={\betterlistings@inboxtrue},
 	},
-	betterlistings block/.code={\betterlistings@block},
+	betterlistings block/.code n args={3}{\betterlistings@block{#1}{#2}{#3}},
 }
-\DeclareTCBListing{lstlisting}{ !O{} }{%
-	betterlistings, code={\betterlistings@setup{#1}{}}, betterlistings block,
+\DeclareDocumentEnvironment{lstlisting}{ !O{} }{\tcbwritetemp}{%
+	\endtcbwritetemp
+	\betterlistings@show{#1}{}{\kvtcb@tempfile}%
 }
 \let\betterlistings@lstinputlisting\lstinputlisting
 \RenewDocumentCommand{\lstinputlisting}{ O{} m }{%
 	\ifbetterlistings@inbox
 		\betterlistings@lstinputlisting[#1]{#2}%
 	\else
-		\tcbinputlisting{betterlistings, code={\betterlistings@setup{#1}{#2}}, betterlistings block,
-			listing file={#2}}%
+		\betterlistings@show{#1}{#2}{#2}%
 	\fi
 }
 
@@ -292,8 +552,8 @@
 	}{}%
 }
 
-% minted blocks get the same look, whenever minted is loaded.
-\newcommand{\betterlistings@minted}{%
+% \betterlistingsminted: minted blocks get the same colors, frame and size (opt-in, like the listings style).
+\newcommand{\betterlistingsminted}{%
 	\setminted{
 		fontsize=\betterlistingssize,
 		bgcolor=code background,
@@ -304,7 +564,6 @@
 		breaklines=true,
 	}%
 }
-\@ifpackageloaded{minted}{\betterlistings@minted}{\AddToHook{package/minted/after}{\betterlistings@minted}}
 
 % --- Inline code ------------------------------------------------------------------------------------------
 % The text is cut into chunks at its break points, with a \discretionary between two chunks: an empty one inside

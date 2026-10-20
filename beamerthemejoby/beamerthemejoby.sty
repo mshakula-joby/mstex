@@ -27,9 +27,11 @@
 % fonts/ and the logo source is kept as jobymark.svg here. Needs LuaLaTeX; other engines fall back to
 % Gotham's fonts with a warning.
 %
-% Code: the theme loads betterlistings (code blocks, the file= header, \code) and minted, with code blocks in
-% \tiny on the code background (made from the alternate background colorAltBG) and framed in the accent
-% color. minted needs Pygments through latexminted, which TeX runs without -shell-escape.
+% Code: the theme loads betterlistings and minted. Listings opt into betterlistings' style with
+% \lstset{style=betterlisting} (or style=betterlisting on one): boxed in \tiny on the code background (made from
+% the alternate background colorAltBG), framed in the accent color, with a file= header, and split over slides
+% when long. \code is inline code. minted needs Pygments through latexminted, which TeX runs without
+% -shell-escape.
 %
 % Package integration (applied only if the package is loaded, whether before or after the theme):
 %   hyperref        - \href and \url links use the palette's emphasis (alert) color.
@@ -233,9 +235,12 @@
 	\Crefname{framenumber}{Slide}{Slides}%
 }
 
-% Code: listings and minted blocks, and \code, from betterlistings (on the alternate background colorAltBG, framed
-% in the accent color), in \tiny.
+% Code: betterlistings (its listings style is opt-in) and minted; code blocks in the style are \tiny.
+% listings sets its captions itself, not through Beamer's caption templates, so give them Beamer's caption font
+% (betterlistings' blocks have Beamer's captions).
 \RequirePackage{betterlistings}
+\let\jobyorig@lstmakecaption\lst@makecaption
+\long\def\lst@makecaption#1#2{{\usebeamerfont{caption}\jobyorig@lstmakecaption{#1}{#2}}}
 \RequirePackage{minted}
 \renewcommand{\betterlistingssize}{\tiny}
 

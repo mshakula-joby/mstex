@@ -1,0 +1,12 @@
+% betterlistings is opt-in: a listing without the betterlisting style is a plain listing (no box, no header, no
+% line numbers), also with the Joby theme, which loads the package.
+\documentclass[aspectratio=169,10pt]{beamer}
+\usetheme{joby}
+\begin{document}
+\begin{frame}[fragile]{Plain}
+	\begin{lstlisting}[language=C++]
+int PLAIN_CODE = 0;
+	\end{lstlisting}
+	\lstinputlisting[lastline=2]{fragments/split-100.cpp}
+\end{frame}
+\end{document}

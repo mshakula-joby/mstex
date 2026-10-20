@@ -196,3 +196,30 @@ end, "betterlistings.code.draw")
 luatexbase.add_to_callback("hpack_filter", function(head)
 	return draw(pad(head))
 end, "betterlistings.code.box")
+
+-- The number of lines of the file path (found as given, or in the output directory, or by kpse), for splitting
+-- long blocks; -1 if it cannot be read.
+function betterlistings.countlines(path)
+	local candidates = { path }
+	local outdir = os.getenv("TEXMF_OUTPUT_DIRECTORY")
+	if outdir then
+		table.insert(candidates, outdir .. "/" .. path)
+	end
+	local found = kpse.find_file(path)
+	if found then
+		table.insert(candidates, found)
+	end
+	for _, p in ipairs(candidates) do
+		local f = io.open(p, "r")
+		if f then
+			local n = 0
+			for _ in f:lines() do
+				n = n + 1
+			end
+			f:close()
+			tex.sprint(tostring(n))
+			return
+		end
+	end
+	tex.sprint("-1")
+end
