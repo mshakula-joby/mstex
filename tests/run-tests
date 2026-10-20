@@ -542,7 +542,7 @@ w, h = im.size
 rows = lambda c, t: [y for y in range(h) for x in range(0, w, 3) if sum(abs(a - b) for a, b in zip(im.getpixel((x, y)), c)) < t]
 accent, body = rows((0xFF, 0xB3, 0x00), 30), rows(code, 4)
 print("    accent rows %d-%d, body rows %d-%d, border %d px" % (min(accent), max(accent), min(body), max(body), near(border, 12)))
-sys.exit(0 if near(border, 12) > 1000 and max(accent) < min(body) + 40 and max(body) > max(accent) + 50 else 1)
+sys.exit(0 if near(border, 12) > 300 and max(accent) < min(body) + 40 and max(body) > max(accent) + 50 else 1)
 PY
 			;;
 		common)

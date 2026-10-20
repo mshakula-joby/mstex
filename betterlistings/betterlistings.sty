@@ -46,8 +46,8 @@
 %       background colorAltBG, or when there is none from the theme's background (Beamer's normal text
 %       background), or from white: the same hue with a quarter of the saturation, a step darker, or a step
 %       lighter if it is dark. "code header" is a step further, "code border" a step further again, "code
-%       frame" is colorAccent, or a step beyond the border, and "code shadow" is the background with a quarter
-%       black. The highlighting colors are mixed with the text color ("code text", Beamer's normal text
+%       frame" is colorAccent, or a step beyond the border, and "code shadow" is the code frame color mixed
+%       60% into the background. The highlighting colors are mixed with the text color ("code text", Beamer's normal text
 %       color or black), so they read on light and dark backgrounds.
 %
 % With cleveref's hyperref support on (as the Joby theme has it), cleveref's listings hooks make
@@ -118,7 +118,7 @@
           { \colorlet { code~frame } { colorAccent } }
       }
       { }
-    \@ifundefinedcolor { code~shadow } { \colorlet { code~shadow } { black!25!code~background } } { }
+    \@ifundefinedcolor { code~shadow } { \colorlet { code~shadow } { code~frame!60!code~background } } { }
     % The text color, as a color: "code text", else Beamer's normal text color, else black.
     \@ifundefinedcolor { code~text }
       {
@@ -595,13 +595,13 @@
 	% rule under the header), and a short shadow from that rule onto the body, which ends before the first line
 	% (the box has more padding at the top for it).
 	betterlistings header/.style={
-		top=1.2ex,
+		top=0.8ex,
 		overlay unbroken and first={%
 			\draw[code frame, line width=0.3pt, rounded corners=\dimexpr1.2mm-0.15pt\relax]
 				([xshift=0.15pt]frame.west |- interior.north) -- ([xshift=0.15pt, yshift=-0.15pt]frame.north west)
 				-- ([xshift=-0.15pt, yshift=-0.15pt]frame.north east) -- ([xshift=-0.15pt]frame.east |- interior.north);
 			\shade[top color=code shadow, bottom color=code background]
-				(interior.north west) rectangle ([yshift=-0.8ex]interior.north east);
+				(interior.north west) rectangle ([yshift=-0.4ex]interior.north east);
 		},
 	},
 }
