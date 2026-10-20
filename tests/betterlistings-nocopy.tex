@@ -1,0 +1,16 @@
+% betterlistings: line numbers are left out of copied (and extracted) text; with copynumbers=true they are kept.
+\documentclass[aspectratio=169,10pt]{beamer}
+\usetheme{joby}
+\lstset{style=betterlisting}
+\begin{document}
+\begin{frame}[fragile]{No copy}
+	\begin{lstlisting}
+int NO_COPY_A = 1;
+int NO_COPY_B = 2;
+int NO_COPY_C = 3;
+	\end{lstlisting}
+	\begin{lstlisting}[copynumbers=true, firstnumber=71]
+int COPY_A = 1;
+	\end{lstlisting}
+\end{frame}
+\end{document}

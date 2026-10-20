@@ -346,6 +346,14 @@ print("    %s" % counts)
 sys.exit(0 if all(v > 30 for v in counts.values()) else 1)
 PY
 			;;
+		betterlistings-nocopy)
+			# The code is in the text, its line numbers 1-3 are not; the block with copynumbers=true keeps its 71.
+			expect_text "int NO_COPY_A = 1;" "$name"; expect_text "COPY_A" "$name"
+			# (Above the footer, which has the slide number.)
+			t=$(pdftotext -f 1 -l 1 "build/$name.pdf" - | sed '/©/q')
+			grep -qxE "[123]" <<<"$t" && fail "$name line numbers are not in the text" || pass "$name line numbers are not in the text"
+			grep -qx "71" <<<"$t" && pass "$name copynumbers=true keeps them" || fail "$name copynumbers=true keeps them"
+			;;
 		betterlistings-cleveref)
 			# The build finishes (no loop); \cref names the listing.
 			expect_text "CLEVEREF_CODE" "$name"; expect_text "See listing 1." "$name"

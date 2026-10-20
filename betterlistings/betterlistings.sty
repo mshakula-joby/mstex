@@ -10,10 +10,10 @@
 %       this package (betterlisting=false turns it off again for one). A block in the style is a box with
 %       rounded corners on the color "code background", with no border; the code is in \ttfamily at
 %       \betterlistingssize, highlighted (keywords in "code keyword", strings in "code string", comments in
-%       "code comment", preprocessor directives in "code directive"), with line numbers in "code number", and
-%       long lines break with an arrow. The language comes from the file's extension (file=, or the input file's
-%       name; C++, Python, Java, bash, Lua, LaTeX and others), else \betterlistingsdefaultlanguage (C++);
-%       language= overrides it.
+%       "code comment", preprocessor directives in "code directive"), with line numbers in "code number" (left
+%       out of copied text, unless copynumbers=true), and long lines break with an arrow. The language comes
+%       from the file's extension (file=, or the input file's name; C++, Python, Java, bash, Lua, LaTeX and
+%       others), else \betterlistingsdefaultlanguage (C++); language= overrides it.
 %       caption= and title= are a caption above the box (below it with captionpos=b), numbered like listings'
 %       own ("Listing 1: ..."), with label= and an entry in the list of listings.
 %       In Beamer, a block longer than a slide is split into boxes of whole lines that fit a slide, with the
@@ -24,8 +24,8 @@
 %       A key of the style: the block gets a header on "code header" with the language, in bold, and <path> in
 %       \ttfamily, which wraps after / _ . and - (\begin{lstlisting}[style=betterlisting, file=src/main.cpp]).
 %       A block with language= gets the header too, with the language only. The header is outlined in "code
-%       frame" (the accent color), with a thicker rule of it under the header and a short shadow ("code shadow")
-%       from that rule onto the body.
+%       frame" (the accent color), with a rule of it, as thin as the outline, under the header and a short
+%       shadow ("code shadow") from that rule onto the body.
 %   \betterlistingssize
 %       The font size of code blocks: empty (the surrounding size) unless redefined (the Joby theme makes it
 %       \tiny).
@@ -60,6 +60,7 @@
 
 \RequirePackage{xcolor}
 \RequirePackage{listings}
+\RequirePackage{accsupp}
 % (The style colors preprocessor directives: that key comes with listings' directives aspect.)
 \lstloadaspects{directives}
 
@@ -189,6 +190,18 @@
 \lst@Key{betterlisting}{false}{\def\betterlistings@on{#1}}
 \lst@Key{file}{}{\def\betterlistings@file{#1}}
 \lst@Key{splitlines}{}{\def\betterlistings@splitlines{#1}}
+% Line numbers are left out of copied text: each is marked with empty replacement text (ActualText, which PDF
+% viewers copy instead of what is shown), unless copynumbers=true. listings gives the number to the last macro
+% of numberstyle.
+\lst@Key{copynumbers}{false}{\def\betterlistings@copynumbers{#1}}
+\def\betterlistings@true{true}
+\newcommand{\betterlistings@number}[1]{%
+	\ifx\betterlistings@copynumbers\betterlistings@true
+		#1%
+	\else
+		\BeginAccSupp{method=plain,ActualText={}}#1\EndAccSupp{}%
+	\fi
+}
 \lstdefinestyle{betterlisting}{
 	betterlisting=true,
 	basicstyle=\ttfamily\betterlistingssize\betterlistings@textcolor,
@@ -197,7 +210,7 @@
 	commentstyle=\color{code comment},
 	directivestyle=\color{code directive},
 	numbers=left,
-	numberstyle=\tiny\color{code number},
+	numberstyle=\tiny\color{code number}\betterlistings@number,
 	numbersep=1em,
 	xleftmargin=1.6em,
 	% The box has the padding.
@@ -616,7 +629,8 @@
 	% padding at the top for it).
 	betterlistings header/.style={
 		top=0.8ex,
-		titlerule=0.8pt,
+		% (As thin as the outline: the shadow under it marks it as the divider.)
+		titlerule=0.3pt,
 		frame style={
 			% (sharp corners: the outline's rounded corners would otherwise round this rectangle too)
 			path picture={\fill[code frame, sharp corners] (frame.south west |- interior.north) rectangle (frame.north east);},
