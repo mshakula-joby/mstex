@@ -1,4 +1,5 @@
-% listings loaded after the theme: code blocks get the code background (gray in colorAltBG) and a hairline frame in the accent color.
+% listings loaded after the theme: code blocks are in \scriptsize (the same word as in \texttt{\scriptsize ...} after
+% the block), on the code background (gray in colorAltBG), with a hairline frame in the accent color.
 \documentclass[aspectratio=169,10pt]{beamer}
 
 \usetheme[palette=orange]{joby}
@@ -10,6 +11,8 @@
 	\begin{lstlisting}[language=C++]
 auto& rBuf = GetBuffer(eFccChannel::HousekeepingToAlgorithm0);
 rBuf.Write(rMessage);  // 500 byte slot
+int SIZEWORD = 0;
 	\end{lstlisting}
+	\texttt{\scriptsize SIZEWORD}
 \end{frame}
 \end{document}

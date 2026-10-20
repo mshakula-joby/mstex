@@ -376,6 +376,14 @@ sys.exit(0 if 0 < left <= 0.2 * em and 0 < right <= 0.2 * em and abs(left - righ
 PY
 			;;
 		joby-listings-after)
+			# The code is in \scriptsize: SIZEWORD is as wide in the block as in \texttt{\scriptsize SIZEWORD} after it.
+			pdftotext -f 1 -l 1 -bbox "build/$name.pdf" "build/$name.bbox.html"
+			python3 -I - "build/$name.bbox.html" <<'PY' && pass "$name code is scriptsize" || fail "$name code is scriptsize"
+import re, sys
+w = [float(b) - float(a) for a, b in re.findall(r'xMin="([\d.]+)" yMin="[\d.]+" xMax="([\d.]+)" yMax="[\d.]+">SIZEWORD<', open(sys.argv[1]).read())]
+print("    SIZEWORD widths %s" % w)
+sys.exit(0 if len(w) == 2 and abs(w[0] - w[1]) < 0.2 else 1)
+PY
 			# Orange palette: the block is on the code background (Joby Off-White, less saturated and a step darker),
 			# framed in the accent color (Joby Yellow, FFB300).
 			pdftoppm -r 100 -f 1 -l 1 -png "build/$name.pdf" "build/$name-img"
