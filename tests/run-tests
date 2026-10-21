@@ -162,10 +162,13 @@ PY
 			# Other acronyms keep the default "long (short)" style.
 			expect_text "Other: OTHER-ACRONYM-LONG (XX), OTHER-ACRONYM-LONG (XX)." "$name"
 			expect_text "https://git.example.com/pull/5" "$name"
-			# \gls writes the id in monospace (page 2); the acronym commands do no formatting (pages 3, 4 and 5 have no monospace).
-			pdffonts -f 2 -l 2 "build/$name.pdf" | grep -q "UbuntuMono" && pass "$name \\gls writes the id in monospace" || fail "$name \\gls writes the id in monospace"
-			for pg in 1 3 4 5; do
-				pdffonts -f $pg -l $pg "build/$name.pdf" | grep -q "UbuntuMono" && fail "$name acronym commands on page $pg do no formatting" || pass "$name acronym commands on page $pg do no formatting"
+			# The id is in monospace with \gls (page 2), \acrshort (pages 1, 3 and 7) and \acrfull (page 6); the title
+			# (\acrlong, page 4) and other acronyms (page 5) are not.
+			for pg in 1 2 3 6 7; do
+				pdffonts -f $pg -l $pg "build/$name.pdf" | grep -q "UbuntuMono" && pass "$name the id on page $pg is in monospace" || fail "$name the id on page $pg is in monospace"
+			done
+			for pg in 4 5; do
+				pdffonts -f $pg -l $pg "build/$name.pdf" | grep -q "UbuntuMono" && fail "$name page $pg has no monospace" || pass "$name page $pg has no monospace"
 			done
 			;;
 		joby-legal)

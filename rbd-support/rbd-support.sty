@@ -14,9 +14,9 @@
 %   \gls{<id>}, \acrshort{<id>}, \acrlong{<id>}, \acrfull{<id>}
 %       The tickets are acronyms of the Jira glossary: the id is the short form and the title the long form.
 %       \gls writes the id in monospace, with the title in parentheses on first use ("id (title)"), and then just
-%       the id. The acronym commands do no formatting: \acrshort is the plain id, \acrlong the title and \acrfull
-%       "id (title)". Other acronyms of the document are not affected. The glossary lists the tickets that were
-%       cited.
+%       the id. \acrshort is the id in monospace, \acrlong the title in the normal font and \acrfull "id (title)",
+%       the id in monospace. Other acronyms of the document are not affected. The glossary lists the tickets that
+%       were cited.
 %   \printjiraglossary
 %       Prints the Jira glossary as a table of id, description and links (breakable across frames). Only the
 %       tickets that the document refers to, with \gls or the acronym commands, are listed.
@@ -34,8 +34,8 @@
 
 \newglossary[jlg]{jira}{jgs}{jgo}{Jira Tickets}
 \makeglossaries
-% \gls is the one command that formats a ticket: the id in monospace, and on first use "id (title)" with the
-% title in the normal font. \acrfull of a ticket also reads "id (title)", plain. Other acronyms of the document
+% \gls formats a ticket as the id (monospace, as the short form is) and on first use "id (title)" with the
+% title in the normal font. \acrfull of a ticket also reads "id (title)". Other acronyms of the document
 % keep the acronym style they have; only the tickets (entries of the Jira glossary) are affected.
 % (At the start of the document: glossaries sets the default acronym style then, and that would replace it.)
 \AtBeginDocument{%
@@ -63,8 +63,8 @@
 \NewDocumentCommand{\setjirabaseurl}{ m }{\renewcommand{\jirasupportjirabase}{#1}}
 \NewDocumentCommand{\setgithubpullbaseurl}{ m }{\renewcommand{\jirasupportgithubbase}{#1}}
 
-% The ticket is an acronym of the Jira glossary: the id is the short form and the title the long form, both
-% plain, so \acrshort, \acrlong and \acrfull print them without formatting.
+% The ticket is an acronym of the Jira glossary: the id is the short form, in monospace, and the title the long
+% form in the normal font, so \acrshort, \acrlong and \acrfull print them like that.
 % The entry keeps the ticket id in user1 and the (optional) pull request numbers in user2.
 % The sort key is the id with its number zero-padded, so tickets sort by number (S4TC-999 before S4TC-10000)
 % instead of character by character.
@@ -87,7 +87,7 @@
 \tl_new:N \l__jirasupport_prs_tl
 \cs_new_protected:Npn \__jirasupport_new:nnnn #1 #2 #3 #4
   {
-    \newacronym [ type = jira , sort = {#1} , user1 = {#2} , user2 = {#3} ] {#2} {#2} {#4}
+    \newacronym [ type = jira , sort = {#1} , user1 = {#2} , user2 = {#3} ] {#2} { \texttt {#2} } {#4}
   }
 \cs_generate_variant:Nn \__jirasupport_new:nnnn { VnVn }
 \NewDocumentCommand{\addjirainfo}{ o m m }
