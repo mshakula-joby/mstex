@@ -733,6 +733,11 @@ x0, y0, x1, y1 = map(float, m.groups())
 sys.exit(0 if (x1 - x0) > (y1 - y0) else 1)
 PY
 			;;
+		joby-nested-lists)
+			expect_text "THREE-DEEP" "$name"
+			grep -q "Font Warning: Font shape" "build/$name.log" && fail "$name has no font shape warnings" || pass "$name has no font shape warnings"
+			grep -q "Package hyperref Warning" "build/$name.log" && fail "$name has no hyperref warnings" || pass "$name has no hyperref warnings"
+			;;
 		joby-toc)
 			p2=$(pdftotext -f 2 -l 2 "build/$name.pdf" -)
 			for n in i 1 3 6; do grep -qx "$n" <<<"$p2" && pass "$name outline page shows '$n'" || fail "$name outline page shows '$n'"; done

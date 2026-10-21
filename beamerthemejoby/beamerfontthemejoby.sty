@@ -89,6 +89,10 @@
 \__joby_set_mono_font:
 \ExplSyntaxOff
 
+% Math in the smallest text (the bullets of a third-level list, in \tiny at the 9pt class option) has no Computer
+% Modern fonts at 4pt and its script sizes, which makes LaTeX warn for each size and substitute 5pt: say so.
+\DeclareMathSizes{4}{5}{5}{5}
+
 % Captions of figures, tables and listings, and their labels ("Figure 1:"), are set in \footnotesize (Gotham: \small).
 \setbeamerfont{caption}{size=\footnotesize}
 \setbeamerfont{caption name}{size=\footnotesize}

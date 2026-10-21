@@ -1,0 +1,23 @@
+% Three levels of list at the 9pt class option, whose third-level bullets are math in 4pt text: no font warnings for
+% sizes the Computer Modern math fonts do not have, and no hyperref warnings for the front matter slide's numeral.
+\documentclass[aspectratio=169,9pt]{beamer}
+\usetheme{joby}
+\usepackage{hyperref}
+\title{Lists}
+\author{Test Author}
+\begin{document}
+\maketitle
+\begin{frame}[toc]{Outline}
+	\tableofcontents
+\end{frame}
+\section{Lists}
+\begin{frame}{Nested}
+	\begin{itemize}
+		\item One
+		\begin{itemize}
+			\item Two
+			\begin{itemize}\item THREE-DEEP\end{itemize}
+		\end{itemize}
+	\end{itemize}
+\end{frame}
+\end{document}

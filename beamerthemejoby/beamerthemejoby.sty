@@ -176,6 +176,10 @@
 \jobywithpackage{hyperref}{%
 	% Internal links (outline, section titles, footer) keep their normal color.
 	\hypersetup{colorlinks=true, urlcolor=colorD, linkcolor={}, citecolor={}, filecolor=colorD}%
+	% The roman numeral of a front matter slide (\jobyfrontshow, made the frame number there with a \let) is not
+	% allowed in a PDF string (a bookmark, a destination name): the frame number is empty there, instead of a
+	% warning for each part of the numeral.
+	\pdfstringdefDisableCommands{\let\insertframenumber\@empty}%
 }
 
 \jobywithpackage{revision-number}{%
