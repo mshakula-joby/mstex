@@ -684,7 +684,20 @@ PY
 			expect_text "FIRST-SLIDE" "$name"; expect_text "FULL-PAGE-WORD" "$name"; expect_text "SECOND-SLIDE" "$name"; expect_text "SECOND-ATTACHMENT-WORD" "$name"
 			[ "$(pdfinfo "build/$name.pdf" | awk '/Pages/{print $2}')" = 4 ] && pass "$name has two slides and two full pages" || fail "$name has two slides and two full pages"
 			size() { pdfinfo -f $1 -l $1 "build/$name.pdf" | awk -v p="$1" '$1=="Page" && $2==p {printf "%d %d\n", $4, $6; exit}'; }
-			[ "$(size 1)" = "$(size 3)" ] && [ "$(size 2)" != "$(size 1)" ] && [ "$(size 4)" != "$(size 1)" ] && pass "$name full pages have their own sizes ($(size 2); $(size 4)), the slides keep theirs ($(size 1))" || fail "$name full pages have their own sizes"
+			w() { set -- $(size $1); echo $1; }
+			h() { set -- $(size $1); echo $2; }
+			[ "$(size 1)" = "$(size 3)" ] && pass "$name the slides keep their size ($(size 1))" || fail "$name the slides keep their size"
+			# The full pages are as wide as the slides and as tall as their content: the 20cm picture is taller than a slide
+			# (rotated), the small box shorter.
+			[ "$(w 2)" = "$(w 1)" ] && [ "$(w 4)" = "$(w 1)" ] && [ "$(h 2)" -gt "$(h 1)" ] && [ "$(h 4)" -lt "$(h 1)" ] && pass "$name full pages have the slides' width ($(size 2); $(size 4))" || fail "$name full pages have the slides' width ($(size 2); $(size 4))"
+			# The wide picture is rotated: its text runs bottom to top (its word box is taller than wide).
+			pdftotext -f 2 -l 2 -bbox "build/$name.pdf" "build/$name.bbox.html"
+			python3 -I - "build/$name.bbox.html" <<'PY' && pass "$name the wide picture is rotated" || fail "$name the wide picture is rotated"
+import re, sys
+m = re.search(r'xMin="([\d.]+)" yMin="([\d.]+)" xMax="([\d.]+)" yMax="([\d.]+)">FULL-PAGE-WORD<', open(sys.argv[1]).read())
+x0, y0, x1, y1 = map(float, m.groups())
+sys.exit(0 if (y1 - y0) > (x1 - x0) else 1)
+PY
 			# Not a slide: no footer, and the slides are numbered 1 and 2 as if the full pages were not there.
 			pdftotext -f 2 -l 2 "build/$name.pdf" - | grep -q "JOBY AVIATION" && fail "$name full page has no footer" || pass "$name full page has no footer"
 			[ "$(pdftotext -f 1 -l 1 "build/$name.pdf" - | grep -E '^[0-9]+$' | tail -1)" = 1 ] && [ "$(pdftotext -f 3 -l 3 "build/$name.pdf" - | grep -E '^[0-9]+$' | tail -1)" = 2 ] && pass "$name full pages do not use up a slide number" || fail "$name full pages do not use up a slide number"
@@ -692,6 +705,16 @@ PY
 			expect_text "Attachment 1" "$name"; expect_text "Attachment 2" "$name"
 			expect_text "See attachment 1 and Attachment 2, also 2." "$name"
 			pdfinfo -dests "build/$name.pdf" | grep -q '^ *2 .*"att:one"' && pdfinfo -dests "build/$name.pdf" | grep -q '^ *4 .*"att:two"' && pass "$name labels in a full page point at that page" || fail "$name labels in a full page point at that page"
+			;;
+		common-fullpage-scale)
+			size() { pdfinfo -f $1 -l $1 "build/$name.pdf" | awk -v p="$1" '$1=="Page" && $2==p {printf "%d %d\n", $4, $6; exit}'; }
+			set -- $(size 1); w1=$1
+			set -- $(size 2); w2=$1; h2=$2
+			[ "$w2" = "$w1" ] && pass "$name the page keeps the slides' width ($w2)" || fail "$name the page keeps the slides' width ($w2 vs $w1)"
+			# Scaled to the width: the picture is wide as the page (at most), so the page is at most about as tall as wide
+			# plus the heading, not 20cm+ tall.
+			[ "$h2" -lt $((w2 * 13 / 10)) ] && pass "$name the picture is scaled down ($w2 x $h2)" || fail "$name the picture is scaled down ($w2 x $h2)"
+			expect_text "SCALED-WORD" "$name"
 			;;
 		joby-toc)
 			p2=$(pdftotext -f 2 -l 2 "build/$name.pdf" -)

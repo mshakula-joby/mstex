@@ -3,11 +3,14 @@
 % Small helpers shared by the presentations.
 %
 %   \begin{fullpage}[<margin>] <content> \end{fullpage}
-%       Puts a page in the PDF that is not a slide: its size is the size of the content plus <margin> (default 0pt)
-%       on every side, whatever the slide size is, under a small "Attachment N" heading. It is shipped out
-%       directly, so it has no title bar, footer or slide number and does not use up a slide number; Beamer does
-%       not know about it (it is not in the outline or the navigation). Use it between frames, not inside one.
-%       Needs LuaLaTeX. The content must not contain verbatim material.
+%       Puts a page in the PDF that is not a slide, under a small "Attachment N" heading. The page is as wide as
+%       the document's pages (the slides, or the paper) and as tall as the content needs, plus <margin> (default
+%       0pt) on every side; content narrower than the page is centered. Content that is too wide for the page is
+%       rotated a quarter turn (so the page is as tall as the content is wide), and only scaled down if it is
+%       still too wide then. It is shipped out directly, so it has no title bar, footer or slide number and
+%       does not use up a slide number; Beamer does not know about it (it is not in the outline or the
+%       navigation). Use it between frames, not inside one. Needs LuaLaTeX. The content must not contain
+%       verbatim material.
 %
 %       Each page is an attachment: \label inside it works, and with cleveref, \cref{<label>} reads
 %       "attachment N" and \Cref{<label>} "Attachment N" (load cleveref after the Beamer theme so that its
@@ -17,12 +20,16 @@
 \NeedsTeXFormat{LaTeX2e}
 \ProvidesPackage{common}[2026/10/18 Helpers shared by the presentations]
 
+\RequirePackage{graphicx}
+
 \newcounter{attachment}
 \renewcommand{\theattachment}{\arabic{attachment}}
 
 \newbox\common@fullpagebox
 \newbox\common@headbox
 \newdimen\common@margin
+\newdimen\common@room
+\newdimen\common@pageheight
 
 \newenvironment{fullpage}[1][0pt]{%
 	\ifdefined\pagewidth\else\PackageError{common}{fullpage needs LuaLaTeX}{Compile with lualatex.}\fi
@@ -36,11 +43,20 @@
 }{%
 	\egroup
 	\setbox\common@headbox\hbox{\normalfont\large\bfseries Attachment~\theattachment}%
-	\dimen@=\dimexpr\wd\common@fullpagebox+2\common@margin\relax
-	\dimen@ii=\dimexpr\ht\common@fullpagebox+\dp\common@fullpagebox
+	% The page is as wide as the document's pages; this is the room for the content on it.
+	\common@room=\dimexpr\pagewidth-2\common@margin\relax
+	% Too wide: rotated a quarter turn, its width becoming the page's height.
+	\ifdim\wd\common@fullpagebox>\common@room
+		\setbox\common@fullpagebox\hbox{\rotatebox{90}{\box\common@fullpagebox}}%
+	\fi
+	% Still too wide (taller than the page is wide): scaled down to fit.
+	\ifdim\wd\common@fullpagebox>\common@room
+		\setbox\common@fullpagebox\hbox{\resizebox{\common@room}{!}{\box\common@fullpagebox}}%
+	\fi
+	\common@pageheight=\dimexpr\ht\common@fullpagebox+\dp\common@fullpagebox
 		+\ht\common@headbox+\dp\common@headbox+\baselineskip+2\common@margin\relax
 	\begingroup
-		\pagewidth=\dimen@ \pageheight=\dimen@ii
+		\pageheight=\common@pageheight
 		% The page content starts at the page's corner: no offsets.
 		\hoffset=-1in \voffset=-1in
 		\shipout\vbox to \pageheight{%
@@ -48,7 +64,8 @@
 			\kern\common@margin
 			\moveright\common@margin\box\common@headbox
 			\kern\baselineskip
-			\moveright\common@margin\hbox{\unhcopy\common@fullpagebox}%
+			\moveright\dimexpr\common@margin+(\common@room-\wd\common@fullpagebox)/2\relax
+				\hbox{\unhcopy\common@fullpagebox}%
 			\vss}%
 	\endgroup
 	% The page counts as a page of the PDF, so page references and Beamer's page anchors stay consistent.

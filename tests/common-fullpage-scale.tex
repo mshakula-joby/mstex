@@ -1,0 +1,12 @@
+% fullpage: content that is too wide even rotated (a 20cm x 18cm picture, on 16:9 slides 16cm wide) is scaled down to
+% fit the page's width; the page keeps the slides' width.
+\documentclass[aspectratio=169,10pt]{beamer}
+\usetheme{joby}
+\usepackage{tikz}
+\usepackage{common}
+\begin{document}
+\begin{frame}{SLIDE}Slide.\end{frame}
+\begin{fullpage}
+	\begin{tikzpicture}\draw[fill=gray!30] (0,0) rectangle (20,18);\node at (10,9) {\Huge SCALED-WORD};\end{tikzpicture}
+\end{fullpage}
+\end{document}
