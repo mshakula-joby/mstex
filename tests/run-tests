@@ -162,6 +162,10 @@ PY
 			# Other acronyms keep the default "long (short)" style.
 			expect_text "Other: OTHER-ACRONYM-LONG (XX), OTHER-ACRONYM-LONG (XX)." "$name"
 			expect_text "https://git.example.com/pull/5" "$name"
+			# \acrfull counts as the first use: a \gls after it prints just the id; \acrfull itself always shows the title.
+			expect_text "Acrfull first: S4TC-1005 (SEVENTH-DESCRIPTION shown by acrfull), then S4TC-1005." "$name"
+			expect_text "Gls first: S4TC-1006 (EIGHTH-DESCRIPTION shown by gls first), then S4TC-1006" "$name"
+			expect_text "(EIGHTH-DESCRIPTION shown by gls first), then S4TC-1006." "$name"
 			# The id is in monospace with \gls (page 2), \acrshort (pages 1, 3 and 7) and \acrfull (page 6); the title
 			# (\acrlong, page 4) and other acronyms (page 5) are not.
 			for pg in 1 2 3 6 7; do

@@ -15,8 +15,9 @@
 %       The tickets are acronyms of the Jira glossary: the id is the short form and the title the long form.
 %       \gls writes the id in monospace, with the title in parentheses on first use ("id (title)"), and then just
 %       the id. \acrshort is the id in monospace, \acrlong the title in the normal font and \acrfull "id (title)",
-%       the id in monospace. Other acronyms of the document are not affected. The glossary lists the tickets that
-%       were cited.
+%       the id in monospace. \acrfull counts as the first use of the ticket, so a \gls after it prints just the id
+%       (\acrfull itself always prints the full form). Other acronyms of the document are not affected. The
+%       glossary lists the tickets that were cited.
 %   \printjiraglossary
 %       Prints the Jira glossary as a table of id, description and links (breakable across frames). Only the
 %       tickets that the document refers to, with \gls or the acronym commands, are listed.
@@ -46,6 +47,17 @@
 			{\glsentryshort{#1}\glsspace(\glsentrylong{#1})#2}%
 			{\jirasupportorigacrfullformat{#1}{#2}}%
 	}%
+	% \acrfull of a ticket shows its title, which is what \gls shows on first use: it counts as the first use, so
+	% a \gls after it prints just the id.
+	\let\jirasupportorig@acrfull\@acrfull
+	\def\@acrfull#1#2[#3]{%
+		\jirasupportorig@acrfull{#1}{#2}[#3]%
+		\ifglsentryexists{#2}{\jirasupportunsetticket{#2}}{}%
+	}%
+}
+\newcommand*{\jirasupportunsetticket}[1]{%
+	\edef\jirasupportentrytype{\glsentrytype{#1}}%
+	\ifdefstring{\jirasupportentrytype}{jira}{\glsunset{#1}}{}%
 }
 \defglsentryfmt[jira]{%
 	\ifdefempty{\glscustomtext}{%

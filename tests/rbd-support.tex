@@ -1,6 +1,6 @@
 % rbd-support (base URLs set once; only ids and pull request numbers are given): \addjirainfo, \gls (monospace id,
 % title in parentheses on first use), \acrshort and \acrfull (monospace id), \acrlong (plain title) and the Jira
-% glossary table.
+% glossary table. \acrfull counts as the first use of a ticket, so a later \gls prints just the id.
 \documentclass[aspectratio=169,10pt]{beamer}
 \usetheme{joby}
 \usepackage{rbd-support}
@@ -13,6 +13,8 @@
 \addjirainfo[9]{S4TC-1003}{UNREFERENCED-DESCRIPTION is never cited}
 \addjirainfo{S4TC-10000}{FIFTH-DESCRIPTION has more digits}
 \addjirainfo{S4TC-999}{SIXTH-DESCRIPTION has fewer digits}
+\addjirainfo{S4TC-1005}{SEVENTH-DESCRIPTION shown by acrfull}
+\addjirainfo{S4TC-1006}{EIGHTH-DESCRIPTION shown by gls first}
 \newacronym{xx}{XX}{OTHER-ACRONYM-LONG}
 \title{Support}
 \author{Test Author}
@@ -37,6 +39,9 @@
 \end{frame}
 \begin{frame}{Numeric sort}
 	Cites \acrshort{S4TC-10000} and \acrshort{S4TC-999}.
+\end{frame}
+\begin{frame}{Aware}
+	Acrfull first: \acrfull{S4TC-1005}, then \gls{S4TC-1005}. Gls first: \gls{S4TC-1006}, then \acrfull{S4TC-1006}, then \gls{S4TC-1006}.
 \end{frame}
 \begin{frame}[allowframebreaks]{Tickets}
 	\printjiraglossary
