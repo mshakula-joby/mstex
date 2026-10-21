@@ -5,9 +5,10 @@
 %   \begin{fullpage}[<margin>] <content> \end{fullpage}
 %       Puts a page in the PDF that is not a slide, under a small "Attachment N" heading. The page is as wide as
 %       the document's pages (the slides, or the paper) and as tall as the content needs, plus <margin> (default
-%       0pt) on every side; content narrower than the page is centered. Content that is too wide for the page is
-%       rotated a quarter turn (so the page is as tall as the content is wide), and only scaled down if it is
-%       still too wide then. It is shipped out directly, so it has no title bar, footer or slide number and
+%       0pt) on every side; content narrower than the page is centered. Content that is too wide for the page and
+%       wider than it is tall is rotated a quarter turn (so the page is as tall as the content is wide); content
+%       that is too wide but not wider than tall stays upright, and the page gets long. Content still too wide
+%       after that is scaled down to the page's width. It is shipped out directly, so it has no title bar, footer or slide number and
 %       does not use up a slide number; Beamer does not know about it (it is not in the outline or the
 %       navigation). Use it between frames, not inside one. Needs LuaLaTeX. The content must not contain
 %       verbatim material.
@@ -45,11 +46,14 @@
 	\setbox\common@headbox\hbox{\normalfont\large\bfseries Attachment~\theattachment}%
 	% The page is as wide as the document's pages; this is the room for the content on it.
 	\common@room=\dimexpr\pagewidth-2\common@margin\relax
-	% Too wide: rotated a quarter turn, its width becoming the page's height.
+	% Too wide, and wider than tall (turning it helps): rotated a quarter turn, its width becoming the page's
+	% height. A tall one stays upright (turning it would make it wider still).
 	\ifdim\wd\common@fullpagebox>\common@room
-		\setbox\common@fullpagebox\hbox{\rotatebox{90}{\box\common@fullpagebox}}%
+		\ifdim\dimexpr\ht\common@fullpagebox+\dp\common@fullpagebox\relax<\wd\common@fullpagebox
+			\setbox\common@fullpagebox\hbox{\rotatebox{90}{\box\common@fullpagebox}}%
+		\fi
 	\fi
-	% Still too wide (taller than the page is wide): scaled down to fit.
+	% Still too wide: scaled down to the page's width, keeping its shape.
 	\ifdim\wd\common@fullpagebox>\common@room
 		\setbox\common@fullpagebox\hbox{\resizebox{\common@room}{!}{\box\common@fullpagebox}}%
 	\fi

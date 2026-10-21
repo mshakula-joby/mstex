@@ -715,6 +715,16 @@ PY
 			# plus the heading, not 20cm+ tall.
 			[ "$h2" -lt $((w2 * 13 / 10)) ] && pass "$name the picture is scaled down ($w2 x $h2)" || fail "$name the picture is scaled down ($w2 x $h2)"
 			expect_text "SCALED-WORD" "$name"
+			# The tall picture (page 3) stays upright: its word is wider than tall, on a page much taller than wide.
+			set -- $(size 3); w3=$1; h3=$2
+			[ "$w3" = "$w1" ] && [ "$h3" -gt $((w3 * 2)) ] && pass "$name the tall picture has the slides' width on a long page ($w3 x $h3)" || fail "$name the tall picture has the slides' width on a long page ($w3 x $h3)"
+			pdftotext -f 3 -l 3 -bbox "build/$name.pdf" "build/$name.bbox.html"
+			python3 -I - "build/$name.bbox.html" <<'PY' && pass "$name the tall picture is upright" || fail "$name the tall picture is upright"
+import re, sys
+m = re.search(r'xMin="([\d.]+)" yMin="([\d.]+)" xMax="([\d.]+)" yMax="([\d.]+)">UPRIGHT-WORD<', open(sys.argv[1]).read())
+x0, y0, x1, y1 = map(float, m.groups())
+sys.exit(0 if (x1 - x0) > (y1 - y0) else 1)
+PY
 			;;
 		joby-toc)
 			p2=$(pdftotext -f 2 -l 2 "build/$name.pdf" -)
