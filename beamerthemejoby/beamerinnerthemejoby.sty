@@ -218,6 +218,33 @@
 \renewcommand{\listoffigures}{\@starttoc{lof}}
 \renewcommand{\listoftables}{\@starttoc{lot}}
 
+% --- Table captions above the table ------------------------------------------------------------------
+% A table's caption always sits above it, wherever \caption (and its \label) is written in the table environment.
+% The body is typeset into a box and the deferred caption is typeset before it.
+\let\jobyorigcaption\caption
+\let\jobyoriglabel\label
+\newbox\jobytablebox
+\def\jobytablecaption{}
+\long\def\jobydefercaption[#1]#2{%
+	\expandafter\gdef\expandafter\jobytablecaption\expandafter{\jobytablecaption\jobyorigcaption[{#1}]{#2}}%
+}
+\def\jobydeferlabel#1{%
+	\expandafter\gdef\expandafter\jobytablecaption\expandafter{\jobytablecaption\jobyoriglabel{#1}}%
+}
+\renewenvironment{table}[1][]{%
+	\def\@captype{table}%
+	\par\nobreak\begin{center}\nobreak
+	\gdef\jobytablecaption{}%
+	\def\caption{\@dblarg\jobydefercaption}%
+	\let\label\jobydeferlabel
+	\setbox\jobytablebox\vbox\bgroup
+}{%
+	\par\egroup
+	\jobytablecaption
+	\box\jobytablebox
+	\par\nobreak\end{center}\nobreak
+}
+
 % --- Height of a frame's content ---------------------------------------------------------------------
 % \jobyframeheight is the height available to the content of the current frame: the text height without the title
 % banner and the footer. Beamer computes it (\beamer@frametextheight) only when the frame ends, so it is recorded

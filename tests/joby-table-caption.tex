@@ -1,0 +1,23 @@
+% A table's caption is above the table wherever \caption is written in the table environment, and its label still resolves.
+\documentclass[aspectratio=169,10pt]{beamer}
+\usetheme{joby}
+\usepackage{hyperref}
+\usepackage{cleveref}
+\title{Table captions}
+\author{Test Author}
+\begin{document}
+\begin{frame}{After}
+	\begin{table}
+		\begin{tabular}{ll} CELLAFTER & b \\ \end{tabular}
+		\caption{CAPAFTER}
+		\label{tab:after}
+	\end{table}
+	See \cref{tab:after}.
+\end{frame}
+\begin{frame}{Before}
+	\begin{table}
+		\caption{CAPBEFORE}
+		\begin{tabular}{ll} CELLBEFORE & b \\ \end{tabular}
+	\end{table}
+\end{frame}
+\end{document}

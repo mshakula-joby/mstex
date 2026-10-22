@@ -738,6 +738,19 @@ PY
 			grep -q "Font Warning: Font shape" "build/$name.log" && fail "$name has no font shape warnings" || pass "$name has no font shape warnings"
 			grep -q "Package hyperref Warning" "build/$name.log" && fail "$name has no hyperref warnings" || pass "$name has no hyperref warnings"
 			;;
+		joby-table-caption)
+			expect_text "CAPAFTER" "$name"
+			pdftotext -bbox "build/$name.pdf" "build/$name.bbox.html"
+			python3 -I - "build/$name.bbox.html" <<'PY' && pass "$name captions are above their tables" || fail "$name captions are above their tables"
+import re, sys
+t = open(sys.argv[1]).read()
+def y(word):
+	return float(re.search(r'yMin="([\d.]+)"[^>]*>' + word + '<', t).group(1))
+sys.exit(0 if y("CAPAFTER") < y("CELLAFTER") and y("CAPBEFORE") < y("CELLBEFORE") else 1)
+PY
+			grep -q "Table 1" "build/$name.log" || true
+			pdftotext "build/$name.pdf" - | grep -q "See Table 1" && pass "$name the label resolves" || fail "$name the label resolves"
+			;;
 		joby-toc)
 			p2=$(pdftotext -f 2 -l 2 "build/$name.pdf" -)
 			for n in i 1 3 6; do grep -qx "$n" <<<"$p2" && pass "$name outline page shows '$n'" || fail "$name outline page shows '$n'"; done
