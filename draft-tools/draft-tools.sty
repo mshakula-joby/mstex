@@ -14,7 +14,8 @@
 %   draft      both drafttext and draftpics.
 %   notes      under Beamer, show the speaker notes (\note); notes=inline, notes=side or notes=only choose how, like
 %              Beamer's show notes (a page after each slide), show notes on second screen (to the right of each
-%              slide) and show only notes. Plain notes means side.
+%              slide) and show only notes. Plain notes means side. With inline and only, every frame gets a notes
+%              page, empty if it has no \note.
 
 \NeedsTeXFormat{LaTeX2e}
 \ProvidesPackage{draft-tools}[Drafting Tools for LaTeX]
@@ -42,6 +43,14 @@
 
 \ProcessOptions
 
+% Notes on pages of their own (inline, only) have a page for every frame: a frame without a note gets an empty one.
+\makeatletter
+\newcommand{\draft@notesforallframes}{%
+  % Beamer makes a notes page for a frame whose notes are not empty, so every frame starts with a space as its note.
+  \def\beamer@framenotesbegin{\gdef\beamer@noteitems{}\gdef\beamer@notes{\ }}%
+}
+\makeatother
+
 % Under Beamer, show the speaker notes: notes=inline, notes=side or notes=only.
 \makeatletter
 \@ifclassloaded{beamer}{%
@@ -49,10 +58,12 @@
     \def\draft@inline{inline}\def\draft@side{side}\def\draft@only{only}%
     \ifx\draft@notesmode\draft@inline
       \setbeameroption{show notes}%
+      \draft@notesforallframes
     \else\ifx\draft@notesmode\draft@side
       \setbeameroption{show notes on second screen=right}%
     \else\ifx\draft@notesmode\draft@only
       \setbeameroption{show only notes}%
+      \draft@notesforallframes
     \else
       \PackageError{draft-tools}{Unknown notes option '\draft@notesmode'}{Use notes=inline, notes=side or notes=only.}%
     \fi\fi\fi

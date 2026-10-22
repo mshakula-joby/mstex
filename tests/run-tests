@@ -970,16 +970,16 @@ PY
 			expect_text "SLIDE-TEXT" "$name"; expect_text "NOTE-TEXT" "$name"
 			# The notes follow the slide on a page of their own, at the slide's width.
 			pages=$(pdfinfo "build/$name.pdf" | awk '/Pages/ {print $2}'); w=$(pdfinfo "build/$name.pdf" | awk '/Page size/ {print int($3)}')
-			[ "$pages" = 2 ] && [ "$w" -lt 600 ] && pass "$name has the notes on a page after the slide" || fail "$name has the notes on a page after the slide ($pages pages, $w pt)" ;;
+			[ "$pages" = 4 ] && [ "$w" -lt 600 ] && pass "$name has a notes page after each slide" || fail "$name has a notes page after each slide ($pages pages, $w pt)" ;;
 		draft-tools-notes-side)
 			expect_text "SLIDE-TEXT" "$name"; expect_text "NOTE-TEXT" "$name"
 			pages=$(pdfinfo "build/$name.pdf" | awk '/Pages/ {print $2}'); w=$(pdfinfo "build/$name.pdf" | awk '/Page size/ {print int($3)}')
 			[ "$pages" = 1 ] && [ "$w" -gt 600 ] && pass "$name has the notes beside the slide" || fail "$name has the notes beside the slide ($pages pages, $w pt)" ;;
 		draft-tools-notes-only)
 			expect_text "NOTE-TEXT" "$name"
-			# Only the notes page: the slide has no page of its own.
+			# Only notes pages: the slides have no page of their own, and the frame without a note has an empty one.
 			pages=$(pdfinfo "build/$name.pdf" | awk '/Pages/ {print $2}')
-			[ "$pages" = 1 ] && pass "$name has only the notes page" || fail "$name has only the notes page ($pages pages)" ;;
+			[ "$pages" = 2 ] && pass "$name has a notes page for each frame, with or without a note" || fail "$name has a notes page for each frame ($pages pages)" ;;
 		draft-tools-draft)
 			expect_text "drafting note" "$name"; expect_text "an idea" "$name"
 			expect_text "missing-image.png" "$name"; expect_text "TikZ picture" "$name"; expect_no_text "DROPPED-NODE" "$name" ;;
