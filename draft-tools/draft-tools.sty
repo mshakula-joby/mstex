@@ -48,8 +48,8 @@
 % the slides it would appear on (the overlay specification as Beamer resolves it: "+-" of the third item is "3-").
 % Beamer's handout mode ignores the specifications, so the resolved one is taken while Beamer decodes it.
 \makeatletter
-\@ifclassloaded{beamer}{%
-  \ifdraftanimations
+% (A macro, so that the \ifx of the patches below are not counted while a false \ifdraftanimations skips text.)
+\def\draft@setupanimations{%
     \RequirePackage{etoolbox}
     \gdef\draft@specs{}
     \gdef\draft@collect{}
@@ -79,8 +79,8 @@
         \gdef\draft@specs{}%
       \fi
     }
-  \fi
-}{}
+}
+\@ifclassloaded{beamer}{\ifdraftanimations\draft@setupanimations\fi}{}
 \makeatother
 
 % Discardcontent Macro

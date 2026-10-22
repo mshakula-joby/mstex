@@ -967,6 +967,10 @@ PY
 		draft-tools-drafttext)
 			expect_text "a drafting note" "$name"; expect_text "an idea" "$name"; expect_text "some directions" "$name"
 			expect_text "[spaced out]" "$name"; expect_text "idea second paragraph" "$name" ;;
+		draft-tools-beamer)
+			expect_text "FIRST-LINE" "$name"
+			pages=$(pdfinfo "build/$name.pdf" | awk '/Pages/ {print $2}')
+			[ "$pages" = 2 ] && pass "$name keeps the overlays without draftanimations" || fail "$name keeps the overlays without draftanimations ($pages pages)" ;;
 		draft-tools-animations)
 			expect_text "FIRST-LINE" "$name"; expect_text "SECOND-LINE" "$name"
 			# One page for the frame, not one per overlay.
