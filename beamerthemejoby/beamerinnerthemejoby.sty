@@ -221,8 +221,6 @@
 % --- Table captions above the table ------------------------------------------------------------------
 % A table's caption always sits above it, wherever \caption (and its \label) is written in the table environment.
 % The body is typeset into a box and the deferred caption is typeset before it.
-\let\jobyorigcaption\caption
-\let\jobyoriglabel\label
 \newbox\jobytablebox
 \def\jobytablecaption{}
 \long\def\jobydefercaption[#1]#2{%
@@ -235,6 +233,9 @@
 	\def\@captype{table}%
 	\par\nobreak\begin{center}\nobreak
 	\gdef\jobytablecaption{}%
+	% (Taken here, not when the theme loads: packages such as cleveref redefine \label and \caption at \begin{document}.)
+	\let\jobyorigcaption\caption
+	\let\jobyoriglabel\label
 	\def\caption{\@dblarg\jobydefercaption}%
 	\let\label\jobydeferlabel
 	\setbox\jobytablebox\vbox\bgroup

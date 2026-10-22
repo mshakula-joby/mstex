@@ -28,7 +28,8 @@
   { Joby~Sans~fonts~not~found~in~'#1';~using~Gotham~defaults. }
 
 % Joby Sans (a rebranded Universal Sans) has no italic and no small caps. Fira Sans, which is also
-% Gotham's font, stands in for those two shapes when it is installed; otherwise italics are the regular
+% Gotham's font, stands in for those two shapes when it is installed (by file name, not by family name: with the family
+% name, LuaTeX ended some runs with "cannot find file ''" when writing the PDF); otherwise italics are the regular
 % font slanted, and small caps are not available.
 \cs_new_protected:Nn \__joby_set_sans_fonts:
   {
@@ -44,7 +45,7 @@
             BoldItalicFeatures = { Path = } ,
           ]
           { JobySans-Text-400.ttf }
-        \newfontfamily \jobysmallcapsfont [ BoldFont = { Fira~Sans~SemiBold } , Letters = SmallCaps ] { Fira~Sans }
+        \newfontfamily \jobysmallcapsfont [ BoldFont = FiraSans-SemiBold.otf , Letters = SmallCaps ] { FiraSans-Regular.otf }
         % LaTeX resets \scshape at the start of the document, so redefine it then.
         \AtBeginDocument { \DeclareRobustCommand \scshape { \not@math@alphabet \scshape \relax \jobysmallcapsfont } }
       }

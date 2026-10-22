@@ -748,8 +748,7 @@ def y(word):
 	return float(re.search(r'yMin="([\d.]+)"[^>]*>' + word + '<', t).group(1))
 sys.exit(0 if y("CAPAFTER") < y("CELLAFTER") and y("CAPBEFORE") < y("CELLBEFORE") else 1)
 PY
-			grep -q "Table 1" "build/$name.log" || true
-			pdftotext "build/$name.pdf" - | grep -q "See Table 1" && pass "$name the label resolves" || fail "$name the label resolves"
+			pdftotext "build/$name.pdf" - | grep -qi "See table 1" && pass "$name the label resolves" || fail "$name the label resolves"
 			;;
 		joby-toc)
 			p2=$(pdftotext -f 2 -l 2 "build/$name.pdf" -)
