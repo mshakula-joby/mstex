@@ -44,8 +44,8 @@
 }{}
 \makeatother
 
-% With draftanimations, an item of an animated list has a small, faint marker in monospace, in the left margin, with
-% the slides it would appear on (the overlay specification as Beamer resolves it: "+-" of the third item is "3-").
+% With draftanimations, an item of an animated list has a small marker in monospace, bright red on black so that it
+% cannot be taken for the presentation, in the left margin, with the slides it would appear on, in <> (the overlay specification as Beamer resolves it: "+-" of the third item is "3-").
 % Beamer's handout mode ignores the specifications, so the resolved one is taken while Beamer decodes it.
 \makeatletter
 % (A macro, so that the \ifx of the patches below are not counted while a false \ifdraftanimations skips text.)
@@ -74,7 +74,7 @@
     \def\draft@itemmarker{%
       \ifx\draft@specs\@empty\else
         \leavevmode\hskip-\@totalleftmargin
-        \llap{{\ttfamily\tiny\color{fg!35!bg}\draft@specs}\kern.5em}%
+        \llap{\colorbox{black}{\ttfamily\tiny\color{red}<\draft@specs>}\kern.3em}%
         \hskip\@totalleftmargin
         \gdef\draft@specs{}%
       \fi
