@@ -962,10 +962,10 @@ PY
 			expect_text "a drafting note" "$name"; expect_text "an idea" "$name"; expect_text "some directions" "$name"
 			expect_text "[spaced out]" "$name"; expect_text "idea second paragraph" "$name" ;;
 		draft-tools-beamer)
-			expect_text "SLIDE-TEXT" "$name"; expect_text "NOTE-TEXT" "$name"
-			# The page holds the slide and its notes side by side: twice as wide as a 4:3 slide (128 mm, 363 pt).
-			w=$(pdfinfo "build/$name.pdf" | awk '/Page size/ {print int($3)}')
-			[ "$w" -gt 600 ] && pass "$name page is two screens wide ($w pt)" || fail "$name page is two screens wide ($w pt)" ;;
+			expect_text "SLIDE-TEXT" "$name"; expect_no_text "NOTE-TEXT" "$name"
+			# drafttext does not show the notes: one page, the slide's width (128 mm, 363 pt).
+			pages=$(pdfinfo "build/$name.pdf" | awk '/Pages/ {print $2}'); w=$(pdfinfo "build/$name.pdf" | awk '/Page size/ {print int($3)}')
+			[ "$pages" = 1 ] && [ "$w" -lt 600 ] && pass "$name drafttext leaves the notes hidden" || fail "$name drafttext leaves the notes hidden ($pages pages, $w pt)" ;;
 		draft-tools-notes-inline)
 			expect_text "SLIDE-TEXT" "$name"; expect_text "NOTE-TEXT" "$name"
 			# The notes follow the slide on a page of their own, at the slide's width.

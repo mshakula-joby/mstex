@@ -14,8 +14,7 @@
 %   draft      both drafttext and draftpics.
 %   notes      under Beamer, show the speaker notes (\note); notes=inline, notes=side or notes=only choose how, like
 %              Beamer's show notes (a page after each slide), show notes on second screen (to the right of each
-%              slide) and show only notes. Plain notes means side. With drafttext and no notes option the notes are
-%              shown on the side.
+%              slide) and show only notes. Plain notes means side.
 
 \NeedsTeXFormat{LaTeX2e}
 \ProvidesPackage{draft-tools}[Drafting Tools for LaTeX]
@@ -43,12 +42,9 @@
 
 \ProcessOptions
 
-% Under Beamer, show the speaker notes: notes=inline, notes=side or notes=only; drafttext alone means side.
+% Under Beamer, show the speaker notes: notes=inline, notes=side or notes=only.
 \makeatletter
 \@ifclassloaded{beamer}{%
-  \ifx\draft@notesmode\@empty
-    \ifdrafttext\def\draft@notesmode{side}\fi
-  \fi
   \ifx\draft@notesmode\@empty\else
     \def\draft@inline{inline}\def\draft@side{side}\def\draft@only{only}%
     \ifx\draft@notesmode\draft@inline
