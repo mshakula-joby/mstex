@@ -11,7 +11,10 @@
 %              command is not replaced. Nested tikzpicture environments are not supported. Pictures in a
 %              tcolorbox (which draws its boxes with TikZ) are kept, and so are those in a group after
 %              \draftpicskeep.
-%   draft      both drafttext and draftpics.
+%   draftanimations
+%              under Beamer, turn off the overlays and animations (\pause, \only<2>, \animate, transitions): each
+%              frame is one page, as in Beamer's handout mode.
+%   draft      drafttext, draftpics and draftanimations.
 %   notes      under Beamer, show the speaker notes (\note); notes=inline, notes=side or notes=only choose how, like
 %              Beamer's show notes (a page after each slide), show notes on second screen (to the right of each
 %              slide) and show only notes. Plain notes means side. With inline and only, every frame gets a notes
@@ -25,13 +28,16 @@
 
 \newif\ifdrafttext
 \newif\ifdraftpics
+\newif\ifdraftanimations
 
 \DeclareOption{drafttext}{\drafttexttrue}
 % Replace images and TikZ pictures with placeholders that name the file they came from, so drafts
 % compile fast and show where each graphic goes. Pictures that must stay real (e.g. a theme's logo)
 % stay real when they look like decoration (see below).
 \DeclareOption{draftpics}{\draftpicstrue}
-\DeclareOption{draft}{\drafttexttrue\draftpicstrue}
+% Under Beamer, no overlays or animations: each frame is typeset once, as in Beamer's handout mode.
+\DeclareOption{draftanimations}{\draftanimationstrue}
+\DeclareOption{draft}{\drafttexttrue\draftpicstrue\draftanimationstrue}
 
 \def\draft@notesmode{}
 \DeclareOption{notes}{\def\draft@notesmode{side}}
@@ -42,6 +48,13 @@
 \DeclareOption*{\expandafter\draft@keyoption\CurrentOption==\@nil}
 
 \ProcessOptions
+
+% Beamer's handout mode is a global macro (the class's handout option sets the same one).
+\makeatletter
+\@ifclassloaded{beamer}{%
+  \ifdraftanimations\gdef\beamer@currentmode{handout}\fi
+}{}
+\makeatother
 
 % Notes on pages of their own (inline, only) have a page for every frame: a frame without a note gets an empty one.
 \makeatletter

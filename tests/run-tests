@@ -986,6 +986,11 @@ PY
 			# Only notes pages: the slides have no page of their own, and the frame without a note has an empty one.
 			pages=$(pdfinfo "build/$name.pdf" | awk '/Pages/ {print $2}')
 			[ "$pages" = 2 ] && pass "$name has a notes page for each frame, with or without a note" || fail "$name has a notes page for each frame ($pages pages)" ;;
+		draft-tools-animations)
+			expect_text "FIRST-LINE" "$name"; expect_text "SECOND-LINE" "$name"
+			# One page for the frame, not one per overlay.
+			pages=$(pdfinfo "build/$name.pdf" | awk '/Pages/ {print $2}')
+			[ "$pages" = 1 ] && pass "$name has one page per frame" || fail "$name has one page per frame ($pages pages)" ;;
 		draft-tools-draft)
 			expect_text "drafting note" "$name"; expect_text "an idea" "$name"
 			expect_text "missing-image.png" "$name"; expect_text "TikZ picture" "$name"; expect_no_text "DROPPED-NODE" "$name" ;;

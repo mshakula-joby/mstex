@@ -1,0 +1,11 @@
+% draft-tools with draftanimations under Beamer: overlays are off, so each frame is one page with everything shown.
+\documentclass{beamer}
+\usepackage[draftanimations]{draft-tools}
+\begin{document}
+\begin{frame}{Overlays}
+	FIRST-LINE
+	\pause
+	SECOND-LINE
+	\only<3>{THIRD-LINE}
+\end{frame}
+\end{document}
