@@ -1,0 +1,24 @@
+% rbd-support: tickets in a Beamer \note do not count as used and are not listed in the glossary, so the slides keep
+% their first use of a ticket.
+\documentclass[aspectratio=169,10pt]{beamer}
+\usetheme{joby}
+\usepackage{rbd-support}
+\setjirabaseurl{https://jira.example.com/browse/}
+\setgithubpullbaseurl{https://git.example.com/pull/}
+\addjirainfo{S4TC-2000}{FIRSTUSE-TITLE}
+\addjirainfo{S4TC-2001}{NOTEONLY-DESCRIPTION}
+\setbeameroption{show notes}
+\title{Notes}
+\author{Test Author}
+\begin{document}
+\begin{frame}{One}
+	Slide one.
+	\note{Note \gls{S4TC-2000} and \acrshort{S4TC-2001}.}
+\end{frame}
+\begin{frame}{Two}
+	Slide two: \gls{S4TC-2000}.
+\end{frame}
+\begin{frame}[allowframebreaks]{Tickets}
+	\printjiraglossary
+\end{frame}
+\end{document}

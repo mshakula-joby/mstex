@@ -18,6 +18,9 @@
 %       the id in monospace. \acrfull counts as the first use of the ticket, so a \gls after it prints just the id
 %       (\acrfull itself always prints the full form). Other acronyms of the document are not affected. The
 %       glossary lists the tickets that were cited.
+%       In a Beamer \note, \gls, \acrshort, \acrlong and \acrfull print the same but leave the glossary alone: they
+%       do not change whether the ticket has been used (so the slides keep their first use) or list it in the
+%       glossary.
 %   \printjiraglossary
 %       Prints the Jira glossary as a table of id, description and links (breakable across frames). Only the
 %       tickets that the document refers to, with \gls or the acronym commands, are listed.
@@ -67,6 +70,38 @@
 	}{\glscustomtext}% \acrshort, \acrlong and \acrfull give their own text: no formatting
 	\glsinsert
 }
+
+% Notes (Beamer's \note) are typeset after their frame, and often by themselves, so the tickets they mention must not
+% change the glossary: inside a note, \gls, \acrshort, \acrlong and \acrfull print as usual, but are not indexed
+% (the glossary does not list a ticket only a note mentions: \glswriteentry does nothing) and restore the entry's used flag afterwards (the first
+% use stays with the slides).
+\makeatletter
+\newcommand*{\jirasupportquiet}[2]{%
+	\ifglsentryexists{#1}{\ifglsused{#1}{#2}{#2\glsreset{#1}}}{#2}%
+}
+\AtBeginDocument{%
+	\let\jirasupportorig@gls\gls
+	\let\jirasupportorig@acrshort\acrshort
+	\let\jirasupportorig@acrlong\acrlong
+	\let\jirasupportorig@acrfull\acrfull
+	\NewDocumentCommand{\jirasupportquietgls}{ O{} m }{\jirasupportquiet{#2}{\jirasupportorig@gls[#1]{#2}}}%
+	\NewDocumentCommand{\jirasupportquietacrshort}{ O{} m O{} }{\jirasupportquiet{#2}{\jirasupportorig@acrshort[#1]{#2}[#3]}}%
+	\NewDocumentCommand{\jirasupportquietacrlong}{ O{} m O{} }{\jirasupportquiet{#2}{\jirasupportorig@acrlong[#1]{#2}[#3]}}%
+	\NewDocumentCommand{\jirasupportquietacrfull}{ O{} m O{} }{\jirasupportquiet{#2}{\jirasupportorig@acrfull[#1]{#2}[#3]}}%
+	\newcommand*{\jirasupportquietnotes}{%
+		\let\gls\jirasupportquietgls
+		\let\acrshort\jirasupportquietacrshort
+		\let\acrlong\jirasupportquietacrlong
+		\let\acrfull\jirasupportquietacrfull
+		\long\def\glswriteentry##1##2{}% no index entry, so the ticket is not listed
+	}%
+	% Under Beamer, a note page starts by switching to these commands (the page is typeset in a group).
+	\@ifundefined{beamer@atbeginnote}{}{%
+		\let\jirasupportorigatbeginnote\beamer@atbeginnote
+		\long\def\beamer@atbeginnote{\jirasupportorigatbeginnote\jirasupportquietnotes}%
+	}%
+}
+\makeatother
 
 % --- The glossary entry ----------------------------------------------------------------------------------
 % The base URLs are used when the glossary is printed, so they can be set anywhere before it.

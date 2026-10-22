@@ -143,6 +143,12 @@ PY
 			corner STANDOUT-FRAME logo && pass "$name standout slide has the logo" || fail "$name standout slide has the logo"
 			corner APPENDIX-FRAME none && pass "$name appendix slide has no logo" || fail "$name appendix slide has no logo"
 			;;
+		rbd-support-notes)
+			# S4TC-2000 is first used in a note and again on a slide: the slide still gives it in full, as a first use does.
+			[ "$(pdftotext "build/$name.pdf" - | grep -c "FIRSTUSE-TITLE")" -ge 3 ] && pass "$name keeps the first use of a ticket for the slides" || fail "$name keeps the first use of a ticket for the slides"
+			expect_text "Note S4TC-2000" "$name"; expect_text "S4TC-2001." "$name"
+			# S4TC-2001 is only in a note: the glossary does not list it.
+			expect_no_text "NOTEONLY-DESCRIPTION" "$name" ;;
 		rbd-support)
 			expect_text "FIRST-DESCRIPTION" "$name"; expect_text "SECOND-DESCRIPTION" "$name"
 			expect_text "https://jira.example.com/browse/S4TC-1000" "$name"; expect_text "https://jira.example.com/browse/S4TC-1001" "$name"
