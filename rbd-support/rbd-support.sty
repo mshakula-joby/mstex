@@ -80,14 +80,14 @@
 	\ifglsentryexists{#1}{\ifglsused{#1}{#2}{#2\glsreset{#1}}}{#2}%
 }
 \AtBeginDocument{%
-	\let\jirasupportorig@gls\gls
-	\let\jirasupportorig@acrshort\acrshort
-	\let\jirasupportorig@acrlong\acrlong
-	\let\jirasupportorig@acrfull\acrfull
-	\NewDocumentCommand{\jirasupportquietgls}{ O{} m }{\jirasupportquiet{#2}{\jirasupportorig@gls[#1]{#2}}}%
-	\NewDocumentCommand{\jirasupportquietacrshort}{ O{} m O{} }{\jirasupportquiet{#2}{\jirasupportorig@acrshort[#1]{#2}[#3]}}%
-	\NewDocumentCommand{\jirasupportquietacrlong}{ O{} m O{} }{\jirasupportquiet{#2}{\jirasupportorig@acrlong[#1]{#2}[#3]}}%
-	\NewDocumentCommand{\jirasupportquietacrfull}{ O{} m O{} }{\jirasupportquiet{#2}{\jirasupportorig@acrfull[#1]{#2}[#3]}}%
+	\let\jirasupportnoteoriggls\gls
+	\let\jirasupportnoteorigacrshort\acrshort
+	\let\jirasupportnoteorigacrlong\acrlong
+	\let\jirasupportnoteorigacrfull\acrfull
+	\NewDocumentCommand{\jirasupportquietgls}{ O{} m }{\jirasupportquiet{#2}{\jirasupportnoteoriggls[#1]{#2}}}%
+	\NewDocumentCommand{\jirasupportquietacrshort}{ O{} m O{} }{\jirasupportquiet{#2}{\jirasupportnoteorigacrshort[#1]{#2}[#3]}}%
+	\NewDocumentCommand{\jirasupportquietacrlong}{ O{} m O{} }{\jirasupportquiet{#2}{\jirasupportnoteorigacrlong[#1]{#2}[#3]}}%
+	\NewDocumentCommand{\jirasupportquietacrfull}{ O{} m O{} }{\jirasupportquiet{#2}{\jirasupportnoteorigacrfull[#1]{#2}[#3]}}%
 	\newcommand*{\jirasupportquietnotes}{%
 		\let\gls\jirasupportquietgls
 		\let\acrshort\jirasupportquietacrshort
