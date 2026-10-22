@@ -971,6 +971,15 @@ PY
 			expect_text "FIRST-LINE" "$name"
 			pages=$(pdfinfo "build/$name.pdf" | awk '/Pages/ {print $2}')
 			[ "$pages" = 2 ] && pass "$name keeps the overlays without draftanimations" || fail "$name keeps the overlays without draftanimations ($pages pages)" ;;
+		draft-tools-handout-a)
+			expect_text "SECOND-LINE" "$name" ;;
+		draft-tools-handout-b)
+			# draftanimations is Beamer's handout mode: the page is the same as the one with the handout class option
+			# (built just before by draft-tools-handout-a), pixel for pixel.
+			expect_text "SECOND-LINE" "$name"
+			pdftoppm -r 100 -png "build/draft-tools-handout-a.pdf" "build/$name-ref"
+			pdftoppm -r 100 -png "build/$name.pdf" "build/$name-cmp"
+			cmp -s build/$name-ref-1.png build/$name-cmp-1.png && pass "$name looks like the handout class option" || fail "$name looks like the handout class option" ;;
 		draft-tools-animations)
 			expect_text "FIRST-LINE" "$name"; expect_text "SECOND-LINE" "$name"
 			# One page for the frame, not one per overlay.

@@ -40,7 +40,12 @@
 % Beamer's handout mode is a global macro (the class's handout option sets the same one).
 \makeatletter
 \@ifclassloaded{beamer}{%
-  \ifdraftanimations\gdef\beamer@currentmode{handout}\fi
+  \ifdraftanimations
+    \gdef\beamer@currentmode{handout}%
+    % What the class's handout option does when the outer theme is loaded, which is before this package: no navigation
+    % symbols. With this, the pages are those of Beamer's handout mode, except for the markers of the animated lists.
+    \setbeamertemplate{navigation symbols}{}%
+  \fi
 }{}
 \makeatother
 
