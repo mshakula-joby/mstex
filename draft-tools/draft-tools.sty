@@ -44,6 +44,45 @@
 }{}
 \makeatother
 
+% With draftanimations, an item of an animated list has a small, faint marker in monospace, in the left margin, with
+% the slides it would appear on (the overlay specification as Beamer resolves it: "+-" of the third item is "3-").
+% Beamer's handout mode ignores the specifications, so the resolved one is taken while Beamer decodes it.
+\makeatletter
+\@ifclassloaded{beamer}{%
+  \ifdraftanimations
+    \RequirePackage{etoolbox}
+    \gdef\draft@specs{}
+    \gdef\draft@collect{}
+    % The first specification that Beamer decodes after an item's own is the item's (one for each of its parts after
+    % the first, and a "stop" part at the end, are not taken).
+    \patchcmd{\beamer@decodefind}{\ifx\beamer@ovmode\beamer@ovmodestop}{\draft@capturespec\ifx\beamer@ovmode\beamer@ovmodestop}{}{%
+      \PackageWarning{draft-tools}{Could not patch Beamer's decoding of overlay specifications}}
+    \def\draft@capturespec{%
+      \ifx\draft@collect\@empty\else
+        \ifx\beamer@ovmode\beamer@ovmodestop\else
+          \ifx\beamer@action\beamer@default
+            \xdef\draft@specs{\beamer@spec}\gdef\draft@collect{}%
+          \fi
+        \fi
+      \fi
+    }
+    % Only the items that Beamer parses an overlay specification for (those of an animated list) get a marker.
+    \pretocmd{\beamer@parseitem}{\gdef\draft@specs{}\gdef\draft@collect{1}}{}{%
+      \PackageWarning{draft-tools}{Could not patch Beamer's items}}
+    \apptocmd{\@item}{\draft@itemmarker}{}{%
+      \PackageWarning{draft-tools}{Could not patch the list items}}
+    \def\draft@itemmarker{%
+      \ifx\draft@specs\@empty\else
+        \leavevmode\hskip-\@totalleftmargin
+        \llap{{\ttfamily\tiny\color{fg!35!bg}\draft@specs}\kern.5em}%
+        \hskip\@totalleftmargin
+        \gdef\draft@specs{}%
+      \fi
+    }
+  \fi
+}{}
+\makeatother
+
 % Discardcontent Macro
 \makeatletter
 \newenvironment{discardcontent}

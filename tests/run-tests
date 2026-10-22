@@ -971,7 +971,10 @@ PY
 			expect_text "FIRST-LINE" "$name"; expect_text "SECOND-LINE" "$name"
 			# One page for the frame, not one per overlay.
 			pages=$(pdfinfo "build/$name.pdf" | awk '/Pages/ {print $2}')
-			[ "$pages" = 1 ] && pass "$name has one page per frame" || fail "$name has one page per frame ($pages pages)" ;;
+			[ "$pages" = 2 ] && pass "$name has one page per frame" || fail "$name has one page per frame ($pages pages)"
+			# The items of the animated list have a marker with their slides (the sub-item shares its parent's); the plain list has none.
+			markers=$(pdftotext -layout "build/$name.pdf" - | grep -c '^ *[0-9]-  .*\(ITEM-\|SUB-ITEM\)')
+			[ "$markers" = 3 ] && pass "$name marks the items of the animated list" || fail "$name marks the items of the animated list ($markers markers)" ;;
 		draft-tools-draft)
 			expect_text "drafting note" "$name"; expect_text "an idea" "$name"
 			expect_text "missing-image.png" "$name"; expect_text "TikZ picture" "$name"; expect_no_text "DROPPED-NODE" "$name" ;;
