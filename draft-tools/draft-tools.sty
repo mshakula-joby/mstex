@@ -12,6 +12,9 @@
 %              tcolorbox (which draws its boxes with TikZ) are kept, and so are those in a group after
 %              \draftpicskeep.
 %   draft      both drafttext and draftpics.
+%
+% With Beamer (the beamer class is loaded) drafttext also shows the notes (\note) on a second screen, to the
+% right of each slide.
 
 \NeedsTeXFormat{LaTeX2e}
 \ProvidesPackage{draft-tools}[Drafting Tools for LaTeX]
@@ -30,6 +33,15 @@
 \DeclareOption{draft}{\drafttexttrue\draftpicstrue}
 
 \ProcessOptions
+
+% Under Beamer, drafting notes come with the speaker notes, shown beside each slide.
+\makeatletter
+\@ifclassloaded{beamer}{%
+  \ifdrafttext
+    \setbeameroption{show notes on second screen=right}%
+  \fi
+}{}
+\makeatother
 
 % Discardcontent Macro
 \makeatletter

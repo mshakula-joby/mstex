@@ -962,6 +962,11 @@ PY
 		draft-tools-drafttext)
 			expect_text "a drafting note" "$name"; expect_text "an idea" "$name"; expect_text "some directions" "$name"
 			expect_text "[spaced out]" "$name"; expect_text "idea second paragraph" "$name" ;;
+		draft-tools-beamer)
+			expect_text "SLIDE-TEXT" "$name"; expect_text "NOTE-TEXT" "$name"
+			# The page holds the slide and its notes side by side: twice as wide as a 4:3 slide (128 mm, 363 pt).
+			w=$(pdfinfo "build/$name.pdf" | awk '/Page size/ {print int($3)}')
+			[ "$w" -gt 600 ] && pass "$name page is two screens wide ($w pt)" || fail "$name page is two screens wide ($w pt)" ;;
 		draft-tools-draft)
 			expect_text "drafting note" "$name"; expect_text "an idea" "$name"
 			expect_text "missing-image.png" "$name"; expect_text "TikZ picture" "$name"; expect_no_text "DROPPED-NODE" "$name" ;;
