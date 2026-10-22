@@ -976,9 +976,11 @@ PY
 			# One page for the frame, not one per overlay.
 			pages=$(pdfinfo "build/$name.pdf" | awk '/Pages/ {print $2}')
 			[ "$pages" = 2 ] && pass "$name has one page per frame" || fail "$name has one page per frame ($pages pages)"
-			# The items of the animated list have a marker with their slides (the sub-item shares its parent's); the plain list has none.
-			markers=$(pdftotext -layout "build/$name.pdf" - | grep -c '^ *<[0-9]->  .*\(ITEM-\|SUB-ITEM\)')
-			[ "$markers" = 3 ] && pass "$name marks the items of the animated list" || fail "$name marks the items of the animated list ($markers markers)" ;;
+			# The items of the animated list have a marker with their slides, and so does a sub-list that animates by
+			# itself; a sub-list with <.-> shares its parent's slides and has none.
+			markers=$(pdftotext -layout "build/$name.pdf" - | grep -c '^ *<[0-9]->  .*\(ITEM-ONE\|ITEM-TWO\|SUB-ANIMATED\)')
+			[ "$markers" = 3 ] && pass "$name marks the animated items" || fail "$name marks the animated items ($markers markers)"
+			pdftotext -layout "build/$name.pdf" - | grep -q '<[0-9]->.*SUB-ITEM' && fail "$name has no marker on a <.-> sub-list" || pass "$name has no marker on a <.-> sub-list" ;;
 		draft-tools-draft)
 			expect_text "drafting note" "$name"; expect_text "an idea" "$name"
 			expect_text "missing-image.png" "$name"; expect_text "TikZ picture" "$name"; expect_no_text "DROPPED-NODE" "$name" ;;
