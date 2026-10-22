@@ -975,12 +975,32 @@ PY
 			expect_text "FIRST-LINE" "$name"; expect_text "SECOND-LINE" "$name"
 			# One page for the frame, not one per overlay.
 			pages=$(pdfinfo "build/$name.pdf" | awk '/Pages/ {print $2}')
-			[ "$pages" = 2 ] && pass "$name has one page per frame" || fail "$name has one page per frame ($pages pages)"
-			# The items of the animated list have a marker with their slides, and so does a sub-list that animates by
-			# itself; a sub-list with <.-> shares its parent's slides and has none.
-			markers=$(pdftotext -layout "build/$name.pdf" - | grep -c '^ *<[0-9]->  .*\(ITEM-ONE\|ITEM-TWO\|SUB-ANIMATED\)')
-			[ "$markers" = 3 ] && pass "$name marks the animated items" || fail "$name marks the animated items ($markers markers)"
-			pdftotext -layout "build/$name.pdf" - | grep -q '<[0-9]->.*SUB-ITEM' && fail "$name has no marker on a <.-> sub-list" || pass "$name has no marker on a <.-> sub-list" ;;
+			[ "$pages" = 3 ] && pass "$name has one page per frame" || fail "$name has one page per frame ($pages pages)"
+			# The items of the animated list have a marker (red on black, found in the picture of page 2) and so does a
+			# sub-list that animates by itself (3 markers: rows of the page with red pixels, in 3 separate groups); the
+			# markers are not text (nothing to select or search); a sub-list with <.-> shares its parent's slides (or, under
+			# a list that is not animated, the whole frame) and has none.
+			pdftotext -layout "build/$name.pdf" - | grep -q '<[0-9]->' && fail "$name markers are not text" || pass "$name markers are not text"
+			pdftoppm -r 150 -f 2 -l 2 -png "build/$name.pdf" "build/$name-mark"
+			python3 -I - build/$name-mark-*.png <<'PY' && pass "$name marks the animated items, not the <.-> sub-list" || fail "$name marks the animated items, not the <.-> sub-list"
+import sys
+from PIL import Image
+im = Image.open(sys.argv[1]).convert("RGB")
+w, h = im.size
+rows = [any(p[0] > 200 and p[1] < 60 and p[2] < 60 for p in (im.getpixel((x, y)) for x in range(0, w // 6))) for y in range(h)]
+groups = sum(1 for i, r in enumerate(rows) if r and (i == 0 or not rows[i - 1]))
+sys.exit(0 if groups == 3 else 1)
+PY
+			pdftotext -f 3 -l 3 "build/$name.pdf" - >/dev/null
+			pdftoppm -r 150 -f 3 -l 3 -png "build/$name.pdf" "build/$name-plain"
+			python3 -I - build/$name-plain-*.png <<'PY' && pass "$name has no marker on a <.-> sub-list" || fail "$name has no marker on a <.-> sub-list"
+import sys
+from PIL import Image
+im = Image.open(sys.argv[1]).convert("RGB")
+w, h = im.size
+sys.exit(1 if any(p[0] > 200 and p[1] < 60 and p[2] < 60 for p in (im.getpixel((x, y)) for y in range(h) for x in range(0, w // 6))) else 0)
+PY
+			;;
 		draft-tools-draft)
 			expect_text "drafting note" "$name"; expect_text "an idea" "$name"
 			expect_text "missing-image.png" "$name"; expect_text "TikZ picture" "$name"; expect_no_text "DROPPED-NODE" "$name" ;;

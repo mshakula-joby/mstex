@@ -44,13 +44,14 @@
 }{}
 \makeatother
 
-% With draftanimations, an item of an animated list has a small marker in monospace, bright red on black so that it
-% cannot be taken for the presentation, in the left margin, with the slides it would appear on, in <> (the overlay specification as Beamer resolves it: "+-" of the third item is "3-").
+% With draftanimations, an item of an animated list has a small marker in bold monospace, bright red on black so that it
+% cannot be taken for the presentation (and no text to select, copy or search), in the left margin, with the slides it would appear on, in <> (the overlay specification as Beamer resolves it: "+-" of the third item is "3-").
 % Beamer's handout mode ignores the specifications, so the resolved one is taken while Beamer decodes it.
 \makeatletter
 % (A macro, so that the \ifx of the patches below are not counted while a false \ifdraftanimations skips text.)
 \def\draft@setupanimations{%
     \RequirePackage{etoolbox}
+    \RequirePackage{accsupp}% the markers have no text for copying or searching
     \gdef\draft@specs{}
     \gdef\draft@collect{}
     % The first specification that Beamer decodes after an item's own is the item's (one for each of its parts after
@@ -72,16 +73,24 @@
     \apptocmd{\@item}{\draft@itemmarker}{}{%
       \PackageWarning{draft-tools}{Could not patch the list items}}
     % An item that shares its parent item's slides (a sub-list with <.->) is not animated by itself: no marker. The
-    % slides of the last item of each level are kept to compare with.
+    % slides of the last item of each level are kept to compare with. An item of a list whose parent is not animated
+    % (the parent shows from the first slide) is compared with "1-"; "0-" is "1-".
+    \def\draft@zerospec{0-}
+    \def\draft@onespec{1-}
     \def\draft@itemmarker{%
       \ifx\draft@specs\@empty
         \expandafter\gdef\csname draft@spec@\the\@itemdepth\endcsname{}%
       \else
         \edef\draft@this{\draft@specs}%
+        \ifx\draft@this\draft@zerospec\let\draft@this\draft@onespec\fi
         \@tempcnta=\@itemdepth \advance\@tempcnta\m@ne
-        \expandafter\ifx\csname draft@spec@\the\@tempcnta\endcsname\draft@this\else
+        \expandafter\let\expandafter\draft@parent\csname draft@spec@\the\@tempcnta\endcsname
+        \ifnum\@itemdepth>1\relax
+          \ifx\draft@parent\@empty\let\draft@parent\draft@onespec\fi
+        \fi
+        \ifx\draft@parent\draft@this\else
           \leavevmode\hskip-\@totalleftmargin
-          \llap{\colorbox{black}{\ttfamily\tiny\color{red}<\draft@specs>}\kern.3em}%
+          \llap{\BeginAccSupp{ActualText={}}\colorbox{black}{\ttfamily\bfseries\tiny\color{red}<\draft@specs>}\EndAccSupp{}\kern.3em}%
           \hskip\@totalleftmargin
         \fi
         \expandafter\xdef\csname draft@spec@\the\@itemdepth\endcsname{\draft@this}%
