@@ -12,9 +12,10 @@
 %              tcolorbox (which draws its boxes with TikZ) are kept, and so are those in a group after
 %              \draftpicskeep.
 %   draft      both drafttext and draftpics.
-%
-% With Beamer (the beamer class is loaded) drafttext also shows the notes (\note) on a second screen, to the
-% right of each slide.
+%   notes      under Beamer, show the speaker notes (\note); notes=inline, notes=side or notes=only choose how, like
+%              Beamer's show notes (a page after each slide), show notes on second screen (to the right of each
+%              slide) and show only notes. Plain notes means side. With drafttext and no notes option the notes are
+%              shown on the side.
 
 \NeedsTeXFormat{LaTeX2e}
 \ProvidesPackage{draft-tools}[Drafting Tools for LaTeX]
@@ -32,13 +33,33 @@
 \DeclareOption{draftpics}{\draftpicstrue}
 \DeclareOption{draft}{\drafttexttrue\draftpicstrue}
 
+\def\draft@notesmode{}
+\DeclareOption{notes}{\def\draft@notesmode{side}}
+\def\draft@keyoption#1=#2=#3\@nil{%
+  \def\draft@key{#1}\def\draft@notes{notes}%
+  \ifx\draft@key\draft@notes\def\draft@notesmode{#2}\else\OptionNotUsed\fi
+}
+\DeclareOption*{\expandafter\draft@keyoption\CurrentOption==\@nil}
+
 \ProcessOptions
 
-% Under Beamer, drafting notes come with the speaker notes, shown beside each slide.
+% Under Beamer, show the speaker notes: notes=inline, notes=side or notes=only; drafttext alone means side.
 \makeatletter
 \@ifclassloaded{beamer}{%
-  \ifdrafttext
-    \setbeameroption{show notes on second screen=right}%
+  \ifx\draft@notesmode\@empty
+    \ifdrafttext\def\draft@notesmode{side}\fi
+  \fi
+  \ifx\draft@notesmode\@empty\else
+    \def\draft@inline{inline}\def\draft@side{side}\def\draft@only{only}%
+    \ifx\draft@notesmode\draft@inline
+      \setbeameroption{show notes}%
+    \else\ifx\draft@notesmode\draft@side
+      \setbeameroption{show notes on second screen=right}%
+    \else\ifx\draft@notesmode\draft@only
+      \setbeameroption{show only notes}%
+    \else
+      \PackageError{draft-tools}{Unknown notes option '\draft@notesmode'}{Use notes=inline, notes=side or notes=only.}%
+    \fi\fi\fi
   \fi
 }{}
 \makeatother
