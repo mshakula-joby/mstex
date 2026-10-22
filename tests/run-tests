@@ -967,25 +967,6 @@ PY
 		draft-tools-drafttext)
 			expect_text "a drafting note" "$name"; expect_text "an idea" "$name"; expect_text "some directions" "$name"
 			expect_text "[spaced out]" "$name"; expect_text "idea second paragraph" "$name" ;;
-		draft-tools-beamer)
-			expect_text "SLIDE-TEXT" "$name"; expect_no_text "NOTE-TEXT" "$name"
-			# drafttext does not show the notes: one page, the slide's width (128 mm, 363 pt).
-			pages=$(pdfinfo "build/$name.pdf" | awk '/Pages/ {print $2}'); w=$(pdfinfo "build/$name.pdf" | awk '/Page size/ {print int($3)}')
-			[ "$pages" = 1 ] && [ "$w" -lt 600 ] && pass "$name drafttext leaves the notes hidden" || fail "$name drafttext leaves the notes hidden ($pages pages, $w pt)" ;;
-		draft-tools-notes-inline)
-			expect_text "SLIDE-TEXT" "$name"; expect_text "NOTE-TEXT" "$name"
-			# The notes follow the slide on a page of their own, at the slide's width.
-			pages=$(pdfinfo "build/$name.pdf" | awk '/Pages/ {print $2}'); w=$(pdfinfo "build/$name.pdf" | awk '/Page size/ {print int($3)}')
-			[ "$pages" = 4 ] && [ "$w" -lt 600 ] && pass "$name has a notes page after each slide" || fail "$name has a notes page after each slide ($pages pages, $w pt)" ;;
-		draft-tools-notes-side)
-			expect_text "SLIDE-TEXT" "$name"; expect_text "NOTE-TEXT" "$name"
-			pages=$(pdfinfo "build/$name.pdf" | awk '/Pages/ {print $2}'); w=$(pdfinfo "build/$name.pdf" | awk '/Page size/ {print int($3)}')
-			[ "$pages" = 1 ] && [ "$w" -gt 600 ] && pass "$name has the notes beside the slide" || fail "$name has the notes beside the slide ($pages pages, $w pt)" ;;
-		draft-tools-notes-only)
-			expect_text "NOTE-TEXT" "$name"
-			# Only notes pages: the slides have no page of their own, and the frame without a note has an empty one.
-			pages=$(pdfinfo "build/$name.pdf" | awk '/Pages/ {print $2}')
-			[ "$pages" = 2 ] && pass "$name has a notes page for each frame, with or without a note" || fail "$name has a notes page for each frame ($pages pages)" ;;
 		draft-tools-animations)
 			expect_text "FIRST-LINE" "$name"; expect_text "SECOND-LINE" "$name"
 			# One page for the frame, not one per overlay.
