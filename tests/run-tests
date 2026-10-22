@@ -980,6 +980,13 @@ PY
 			pdftoppm -r 100 -png "build/draft-tools-handout-a.pdf" "build/$name-ref"
 			pdftoppm -r 100 -png "build/$name.pdf" "build/$name-cmp"
 			cmp -s build/$name-ref-1.png build/$name-cmp-1.png && pass "$name looks like the handout class option" || fail "$name looks like the handout class option" ;;
+		draft-tools-off)
+			expect_text "FIRST-LINE" "$name"; expect_text "SECOND-LINE" "$name"
+			# Hidden like in a final document: the idea is not shown, and the note is plain text (no draft color or brackets).
+			expect_no_text "HIDDEN-IDEA" "$name"; expect_no_text "[DRAFT-NOTE]" "$name"
+			# The overlays are on: one page for each of the two slides.
+			pages=$(pdfinfo "build/$name.pdf" | awk '/Pages/ {print $2}')
+			[ "$pages" = 2 ] && pass "$name keeps the overlays" || fail "$name keeps the overlays ($pages pages)" ;;
 		draft-tools-animations)
 			expect_text "FIRST-LINE" "$name"; expect_text "SECOND-LINE" "$name"
 			# One page for the frame, not one per overlay.

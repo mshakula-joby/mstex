@@ -1,0 +1,12 @@
+% draft-tools with \draftoff defined before the document class: the draft options are ignored.
+\def\draftoff{}
+\documentclass{beamer}
+\usepackage[draft]{draft-tools}
+\begin{document}
+\begin{frame}{Release}
+	\draft{DRAFT-NOTE} \idea{HIDDEN-IDEA}
+	FIRST-LINE
+	\pause
+	SECOND-LINE
+\end{frame}
+\end{document}

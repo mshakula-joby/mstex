@@ -15,6 +15,9 @@
 %              under Beamer, turn off the overlays and animations (\pause, \only<2>, \animate, transitions): each
 %              frame is one page, as in Beamer's handout mode.
 %   draft      drafttext, draftpics and draftanimations.
+%
+% If \draftoff is defined before the package is loaded (e.g. by \def\draftoff{} on the command line, before
+% \documentclass), all of these options are ignored: a release build of a document that asks for a draft.
 
 \NeedsTeXFormat{LaTeX2e}
 \ProvidesPackage{draft-tools}[Drafting Tools for LaTeX]
@@ -36,6 +39,7 @@
 \DeclareOption{draft}{\drafttexttrue\draftpicstrue\draftanimationstrue}
 
 \ProcessOptions
+\ifdefined\draftoff\drafttextfalse\draftpicsfalse\draftanimationsfalse\fi
 
 % Beamer's handout mode is a global macro (the class's handout option sets the same one).
 \makeatletter
