@@ -519,6 +519,24 @@ row = [x for x, y in pts if y == y0 + 1]
 sys.exit(0 if min(row) <= x0 else 1)
 PY
 			;;
+		betterlistings-code-color)
+			# No red ink at all: the code inside the red text, and in the title, takes the theme's text color.
+			pdftoppm -r 200 -f 1 -l 1 -png "build/$name.pdf" "build/$name-img"
+			python3 -I - build/$name-img-*.png <<'PY' && pass "$name code ignores the surrounding color" || fail "$name code ignores the surrounding color"
+import sys
+from PIL import Image
+im = Image.open(sys.argv[1]).convert("RGB")
+w, h = im.size
+red = lambda p: p[0] - max(p[1], p[2]) > 120
+# The red sentence is there (outside the pill) ...
+rows = [y for y in range(h) if any(red(im.getpixel((x, y))) for x in range(0, w, 2))]
+assert rows, "no red text"
+# ... but the code in it is not red: it is as wide as dark ink in the same line.
+y0, y1 = rows[0], rows[-1]
+dark = lambda p: max(p) < 90
+assert any(dark(im.getpixel((x, y))) for y in range(y0, y1 + 1) for x in range(w)), "no dark code ink in the red line"
+PY
+			;;
 		betterlistings-code-fallback)
 			# The pills are the slide background (dark here) a step lighter.
 			pdftoppm -r 100 -f 1 -l 1 -png "build/$name.pdf" "build/$name-img"

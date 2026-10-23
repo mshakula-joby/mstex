@@ -37,8 +37,9 @@
 %       minted blocks get the colors, frame and size of the style (opt-in as well).
 %   \code{<code>}
 %       Inline code: <code> in \ttfamily on a rounded rectangle (a "pill") in "code background", with the text in
-%       "code text" if it is defined, else in the surrounding text color. The line may break at a space, where a
-%       lower case letter or digit is followed by a capital, and after _ or ::, without a hyphen; the pill is
+%       "code text" if it is defined, else in the theme's text color, whatever color the surrounding text is in (a
+%       frame title's white, say). The line may break at a space, where a lower case letter or digit is followed by
+%       a capital, and after _ or ::, without a hyphen; the pill is
 %       then closed at the end of the line and opened again on the next one. The pills hug the ink of the code
 %       and are drawn by LuaTeX (betterlistings.lua), one shape for each line; other engines put the code on a
 %       plain rectangle, which does not break.
@@ -925,6 +926,10 @@
     \regex_replace_all:nnNT { (\\[A-Za-z@]+)\ ([^A-Za-z@]) } { \1\2 } \l__betterlistings_code_tl
       { \__betterlistings_unspace: }
   }
+% The code's color, whatever color the surrounding text is in (a frame title, say): "code text" if it is defined
+% (also later than the package), else the theme's text color.
+\cs_new_protected:Npn \__betterlistings_text_color:
+  { \@ifundefinedcolor { code~text } { \color { betterlistings@fg } } { \color { code~text } } }
 \cs_new_protected:Npn \__betterlistings_code:n #1
   {
     \group_begin:
@@ -957,13 +962,13 @@
                 )
             }
           \betterlistings@codeattr = \g__betterlistings_code_int
-          \@ifundefinedcolor { code~text } { } { \color { code~text } }
+          \__betterlistings_text_color:
           \tl_use:N \l__betterlistings_code_tl
         }
         {
           \dim_set:Nn \fboxsep { 0.1em }
           \colorbox { code~background }
-            { \@ifundefinedcolor { code~text } { } { \color { code~text } } \tl_use:N \l__betterlistings_code_tl }
+            { \__betterlistings_text_color: \tl_use:N \l__betterlistings_code_tl }
         }
     \group_end:
   }
